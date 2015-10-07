@@ -5,10 +5,10 @@
 Statistical comparison of two networks based on the difference in strength
 }
 \description{
-This permutation based hypothesis test, suited for gaussian and binary data, assesses the difference in strength (weighted sum of connections) of two networks. Network structures are estimated with l1-regularized partial correlations (gaussian data) or with l1-regularized logistic regression (eLasso, binary data).
+This permutation based hypothesis test, suited for gaussian and binary data, assesses the difference in strength (weighted sum of connections) of two networks. Network structures are estimated with l1-regularized partial correlations (gaussian data) or with l1-regularized logistic regression (eLasso, binary data). Suited for comparison of independent and dependent samples.
 }
 \usage{
-NCT(data1, data2, gamma, it, binary.data, weighted = TRUE, 
+NCT(data1, data2, gamma, it, binary.data = FALSE, paired=FALSE, weighted = TRUE, 
 AND = TRUE, progressbar = TRUE, ...)
 }
 
@@ -27,6 +27,9 @@ The number of iterations (permutations).
 }
   \item{binary.data}{
 Logical. Can be TRUE of FALSE to indicate whether the data is binary or not. If binary.data is FALSE, the data is regarded gaussian.
+}
+  \item{paired}{
+Logical. Can be TRUE of FALSE to indicate whether the samples are dependent or not. If paired is TRUE, relabeling is performed within each pair of observations. If paired is FALSE, relabeling is not restricted to pairs of observations.
 }
   \item{weighted}{
 Logical. Can be TRUE of FALSE to indicate whether the networks to be compared should be weigthed of not. If not, the estimated networks are dichotomized. Defaults to TRUE.
@@ -51,6 +54,8 @@ NCT returns a 'NCT' object that contains the following items:
 Ernst MD. Permutation methods: A basis for exact inference. Stat Sci. 2004;19(4):676-685.
 
 Good PI. Permutation, parametric and bootstrap tests of hypotheses. Vol. 3. New York:: Springer, 2005.
+
+van Borkulo, C. D., Boschloo, L., Borsboom, D., Penninx, B. W. J. H., Waldorp, L. J., & Schoevers, R.A. (2015). Association of symptom network structure with the course of depression. In press.
 
 van Borkulo, C. D., Waldorp, L. J., Boschloo, L., Schoevers, R.A., & Borsboom, D. (2015). Distinguishing networks: A permutation test for comparing network structures. Manuscript in preparation. 
 }
