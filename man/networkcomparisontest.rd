@@ -60,7 +60,7 @@ van Borkulo, C. D., Boschloo, L., Borsboom, D., Penninx, B. W. J. H., Waldorp, L
 van Borkulo, C. D., Waldorp, L. J., Boschloo, L., Schoevers, R.A., & Borsboom, D. (2015). Distinguishing networks: A permutation test for comparing network structures. Manuscript in preparation. 
 }
 \author{
-Claudia D. van Borkulo
+Claudia D. van Borkulo, with contributions from Sacha Epskamp and Alex Millner
 
 Maintainer: Claudia D. van Borkulo <cvborkulo@gmail.com>
 }
