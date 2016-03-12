@@ -5,11 +5,10 @@
 Statistical comparison of two networks based on the difference in strength
 }
 \description{
-This permutation based hypothesis test, suited for gaussian and binary data, assesses the difference in strength (weighted sum of connections) of two networks. Network structures are estimated with l1-regularized partial correlations (gaussian data) or with l1-regularized logistic regression (eLasso, binary data). Suited for comparison of independent and dependent samples.
+This permutation based hypothesis test, suited for gaussian and binary data, assesses the difference between two networks based on several measures (difference in global strength, the largest difference between edges, individual edges). Network structures are estimated with l1-regularized partial correlations (gaussian data) or with l1-regularized logistic regression (eLasso, binary data). Suited for comparison of independent and dependent samples (currently, only for one group measured twice).
 }
 \usage{
-NCT(data1, data2, gamma, it, binary.data = FALSE, paired=FALSE, weighted = TRUE, 
-AND = TRUE, progressbar = TRUE, ...)
+NCT(data1, data2, gamma, it, binary.data=FALSE, paired=FALSE, weighted=TRUE, AND=TRUE, signlevel=.05, progressbar=TRUE, ...)
 }
 
 \arguments{
@@ -26,16 +25,19 @@ A single value between 0 and 1 or 'range'. When a single value is provided, netw
 The number of iterations (permutations).
 }
   \item{binary.data}{
-Logical. Can be TRUE of FALSE to indicate whether the data is binary or not. If binary.data is FALSE, the data is regarded gaussian.
+Logical. Can be TRUE or FALSE to indicate whether the data is binary or not. If binary.data is FALSE, the data is regarded gaussian.
 }
   \item{paired}{
-Logical. Can be TRUE of FALSE to indicate whether the samples are dependent or not. If paired is TRUE, relabeling is performed within each pair of observations. If paired is FALSE, relabeling is not restricted to pairs of observations.
+Logical. Can be TRUE of FALSE to indicate whether the samples are dependent or not. If paired is TRUE, relabeling is performed within each pair of observations. If paired is FALSE, relabeling is not restricted to pairs of observations. Note that, currently, dependent data is assumed to entail one group measured twice.
 }
   \item{weighted}{
 Logical. Can be TRUE of FALSE to indicate whether the networks to be compared should be weigthed of not. If not, the estimated networks are dichotomized. Defaults to TRUE.
 }
   \item{AND}{
 Logical. Can be TRUE of FALSE to indicate whether the AND-rule or the OR-rule should be used to define the edges in the network. Defaults to TRUE. Only necessary for binary data.
+}
+  \item{signlevel}{
+A single value indicating the significance level. This is used for determining significance of individual edges. Defaults to .05.
 }
   \item{progressbar}{
 Logical. Should the pbar be plotted in order to see the progress of the estimation procedure? Defaults to TRUE.
@@ -45,9 +47,16 @@ Logical. Should the pbar be plotted in order to see the progress of the estimati
 
 \value{
 NCT returns a 'NCT' object that contains the following items:
-\item{diffreal }{The difference in strength between the networks of the observed data sets.}
-\item{diffperm }{The difference in strength between the networks of the permutated data sets.}
-\item{pval }{The p value resulting from the permutation test.}
+\item{glstr.real }{The difference in global strength between the networks of the observed data sets.}
+\item{glstr.perm }{The difference in global strength between the networks of the permutated data sets.}
+\item{glstr.sep}{The global strength values of the individual networks}
+\item{glstr.pval }{The p value resulting from the permutation test concerning difference in global strength.}
+\item{max.real}{The value of the maximum difference in edge weights of the observed networks}
+\item{max.perm}{The values of the maximum difference in edge weights of the permuted networks}
+\item{max.pval }{The p value resulting from the permutation test concerning the maximum difference in edge weights.}
+\item{el.pvals}{The p values per edge from the permutation test concerning differences in edges weights.}
+\item{nw1}{The weighted adjacency matrix of the observed network of data1}
+\item{nw2}{The weighted adjacency matrix of the observed network of data2}
 }
 
 \references{
@@ -90,12 +99,14 @@ data2 <- IsingSampler(nSample, Graph, Thresh)
 ### Compare networks of data sets using NCT ###
 # with gamma = 0. Iterations set to 10 to save time. Should be 1000 at least.
 Res_0 <- NCT(data1, data2, gamma=0, it=10, binary.data = TRUE)
-# across entire range of gamma. Warning: this takes a while!
-# Res_range <- NCT(data1, data2, gamma='range', it=10, binary.data = TRUE)
 
-# Plot results (not reliable with 10 permutations!):
-hist(Res_0$diffperm, main=paste('p =',Res_0$pval),xlab='Difference in strength')
-points(Res_0$diffreal,col='red')
+# Plot results of global strength (not reliable with only 10 permutations!):
+hist(Res_0$glstr.perm, main=paste('p =',Res_0$glstr.pval),xlab='Difference in global strength')
+points(Res_0$glstr.real,col='red')
+
+# Plot results of the maximum difference in edge weights (not reliable with only 10 permutations!):
+hist(Res_0$max.perm, main=paste('p =',Res_0$max.pval),xlab='Maximum')
+points(Res_0$max.real,col='red')
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.

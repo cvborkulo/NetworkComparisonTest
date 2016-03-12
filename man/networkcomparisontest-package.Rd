@@ -5,14 +5,14 @@
 Statistical comparison of two networks based on the difference in strength
 }
 \description{
-This permutation based hypothesis test, suited for gaussian and binary data, assesses the difference in strength of two networks. Network structures are estimated with l1-regularized partial correlations (gaussian data) or with l1-regularized logistic regression (eLasso, binary data). Suited for comparison of independent and dependent samples.
+This permutation based hypothesis test, suited for gaussian and binary data, assesses the difference between two networks based on several measures (difference in global strength, the largest difference between edges, individual edges). Network structures are estimated with l1-regularized partial correlations (gaussian data) or with l1-regularized logistic regression (eLasso, binary data). Suited for comparison of independent and dependent samples (currently, only for one group measured twice).
 }
 \details{
 \tabular{ll}{
 Package: \tab NetworkComparisonTest\cr
 Type: \tab Package\cr
-Version: \tab 0.2.1\cr
-Date: \tab 2015-10-07\cr
+Version: \tab 1.0.0\cr
+Date: \tab 2016-3-11\cr
 License: \tab GPL-2\cr
 }
 }

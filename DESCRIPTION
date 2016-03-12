@@ -1,10 +1,10 @@
 Package: NetworkComparisonTest
 Type: Package
 Title: Statistical comparison of two networks based on the difference in strength
-Version: 0.2.1
-Date: 2015-10-07
+Version: 1.0.0
+Date: 2016-3-11
 Author: Claudia D. van Borkulo, with contributions from Sacha Epskamp and Alex Millner
 Maintainer: <cvborkulo@gmail.com>
-Imports: qgraph, IsingFit, IsingSampler
-Description: This permutation based hypothesis test, suited for gaussian and binary data, assesses the difference in strength of two networks. Network structures are estimated with l1-regularized partial correlations (gaussian data) or with l1-regularized logistic regression (eLasso, binary data).
+Imports: qgraph, IsingFit, IsingSampler, reshape2
+Description: This permutation based hypothesis test, suited for gaussian and binary data, assesses the difference between two networks based on several measures (difference in global strength, the largest difference between edges, individual edges). Network structures are estimated with l1-regularized partial correlations (gaussian data) or with l1-regularized logistic regression (eLasso, binary data). Suited for comparison of independent and dependent samples (currently, only for one group measured twice).
 License: GPL-2
