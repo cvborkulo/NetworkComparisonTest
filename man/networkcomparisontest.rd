@@ -8,7 +8,7 @@ Statistical comparison of two networks based on the difference in strength
 This permutation based hypothesis test, suited for gaussian and binary data, assesses the difference between two networks based on several measures (difference in global strength, the largest difference between edges, individual edges). Network structures are estimated with l1-regularized partial correlations (gaussian data) or with l1-regularized logistic regression (eLasso, binary data). Suited for comparison of independent and dependent samples (currently, only for one group measured twice).
 }
 \usage{
-NCT(data1, data2, gamma, it, binary.data=FALSE, paired=FALSE, weighted=TRUE, AND=TRUE, signlevel=.05, progressbar=TRUE, ...)
+NCT(data1, data2, gamma, it, binary.data=FALSE, paired=FALSE, weighted=TRUE, AND=TRUE, test.edges=FALSE, edges, progressbar=TRUE, ...)
 }
 
 \arguments{
@@ -19,7 +19,7 @@ One of two datasets. The dimension of the matrix is nobs x nvars; each row is a 
 The other of two datasets. The dimension of the matrix is nobs x nvars; each row is a vector of observations of the variables. Must be cross-sectional data.
 }
   \item{gamma}{
-A single value between 0 and 1 or 'range'. When a single value is provided, networks are estimated with this value for hyperparameter gamma in the extended BIC. When 'range' is provided, networks are estimated across the entire range of gamma's (0, 0.1, 0.2, ..., 1).
+A single value between 0 and 1. Networks are estimated with this value for hyperparameter gamma in the extended BIC.
 }
   \item{it}{
 The number of iterations (permutations).
@@ -36,8 +36,11 @@ Logical. Can be TRUE of FALSE to indicate whether the networks to be compared sh
   \item{AND}{
 Logical. Can be TRUE of FALSE to indicate whether the AND-rule or the OR-rule should be used to define the edges in the network. Defaults to TRUE. Only necessary for binary data.
 }
-  \item{signlevel}{
-A single value indicating the significance level. This is used for determining significance of individual edges. Defaults to .05.
+  \item{test.edges}{
+Logical. Can be TRUE of FALSE to indicate whether or not differences in individual edges should be tested.
+}
+  \item{edges}{
+Character or list. When 'all', differences between all individual edges are tested. When provided a list with one or more pairs of indices referring to variables, the provided edges are tested. A Holm-Bonferroni correction is applied to control for multiple testing.
 }
   \item{progressbar}{
 Logical. Should the pbar be plotted in order to see the progress of the estimation procedure? Defaults to TRUE.
@@ -54,7 +57,7 @@ NCT returns a 'NCT' object that contains the following items:
 \item{max.real}{The value of the maximum difference in edge weights of the observed networks}
 \item{max.perm}{The values of the maximum difference in edge weights of the permuted networks}
 \item{max.pval }{The p value resulting from the permutation test concerning the maximum difference in edge weights.}
-\item{el.pvals}{The p values per edge from the permutation test concerning differences in edges weights.}
+\item{el.pvals}{The Holm-Bonferroni corrected p values per edge from the permutation test concerning differences in edges weights. Only if test.edges = TRUE.}
 \item{nw1}{The weighted adjacency matrix of the observed network of data1}
 \item{nw2}{The weighted adjacency matrix of the observed network of data2}
 }
