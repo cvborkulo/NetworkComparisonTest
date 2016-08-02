@@ -1,6 +1,11 @@
 export(NCT)
+S3method(plot,NCT)
+S3method(summary,NCT)
 
 import(qgraph)
 import(IsingFit)
 import(IsingSampler)
 import(reshape2)
+importFrom("graphics", "hist", "points")
+importFrom("stats", "cor", "p.adjust")
+importFrom("utils", "setTxtProgressBar", "txtProgressBar")
