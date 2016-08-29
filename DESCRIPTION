@@ -5,7 +5,7 @@ Version: 2.0.0
 Date: 2016-8-2
 Author: Claudia D. van Borkulo, with contributions from Sacha Epskamp and Alex
     Millner
-Maintainer: <cvborkulo@gmail.com>
+Maintainer: Claudia van Borkulo <cvborkulo@gmail.com>
 Imports:
     qgraph,
     IsingFit,
