@@ -3,27 +3,23 @@ summary.NCT <- function(object,...){
   cat("\n NETWORK INVARIANCE TEST
  Test statistic M: ", object$nwinv.real,
       "\n p-value", object$nwinv.pval,
-      "\n\n GLOBAL STRENGTH INVARIANCE TEST
- Global strength per group: ", object$glstrinv.sep,
-      "\n Test statistic S: ", object$glstrinv.real,
-      "\n p-value", object$glstrinv.pval,
       "\n\n EDGE INVARIANCE TEST
  Edges tested: ", object$edges.tested,
       "\n Test statistic E: ", object$einv.real,
-      "\n p-value", object$einv.pvals
+      "\n p-value", object$einv.pvals,
+      "\n\n GLOBAL STRENGTH INVARIANCE TEST
+ Global strength per group: ", object$glstrinv.sep,
+      "\n Test statistic S: ", object$glstrinv.real,
+      "\n p-value", object$glstrinv.pval
   )
   
 }
 
-plot.NCT <- function(x,what = c("strength","network","edge"),...){
+plot.NCT <- function(x,what = c("network","edge","strength"),...){
   
   what <- match.arg(what)
   
   ## Plot results of global strength invariance test (not reliable with only 10 permutations!):
-  if (what == "strength"){
-    hist(x$glstrinv.perm, main=paste('p =',x$glstrinv.pval),xlab='Difference in global strength',xlim=c(0,max(x$glstrinv.real,x$glstrinv.perm)))
-    points(x$glstrinv.real,0,col='red',pch=17)
-  } 
   
   if (what == "network"){
     
@@ -41,6 +37,13 @@ plot.NCT <- function(x,what = c("strength","network","edge"),...){
       points(x$einv.real[i],0,col='red',pch=17)
     }
 
-  } #else stop("Method not implemented yet.")
+  } 
+  
+  if (what == "strength"){
+    hist(x$glstrinv.perm, main=paste('p =',x$glstrinv.pval),xlab='Difference in global strength',xlim=c(0,max(x$glstrinv.real,x$glstrinv.perm)))
+    points(x$glstrinv.real,0,col='red',pch=17)
+  } 
+  
+  #else stop("Method not implemented yet.")
   
 }
