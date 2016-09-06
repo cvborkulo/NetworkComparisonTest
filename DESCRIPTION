@@ -2,7 +2,7 @@ Package: NetworkComparisonTest
 Type: Package
 Title: Statistical Comparison of Two Networks Based on Three Invariance Measures
 Version: 2.0.0
-Date: 2016-8-2
+Date: 2016-9-6
 Author: Claudia D. van Borkulo, with contributions from Sacha Epskamp and Alex Millner
 Maintainer: Claudia van Borkulo <cvborkulo@gmail.com>
 Imports:
@@ -13,11 +13,11 @@ Imports:
     stats,
     graphics,
     utils
-Description: This permutation based hypothesis test, suited for gaussian and
+Description: This permutation based hypothesis test, suited for Gaussian and
     binary data, assesses the difference between two networks based on several
     invariance measures (network structure invariance, global strength invariance,
     edge invariance). Network structures are estimated with l1-regularized partial
-    correlations (gaussian data) or with l1-regularized logistic regression (eLasso,
+    correlations (Gaussian data) or with l1-regularized logistic regression (eLasso,
     binary data). Suited for comparison of independent and dependent samples
     (currently, only for one group measured twice).
 License: GPL-2

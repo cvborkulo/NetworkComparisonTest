@@ -90,7 +90,7 @@ library("IsingFit")
 ### underlying network structures have the same strength 
 # Input:
 N <- 6 # Number of nodes
-nSample <- 1000 # Number of samples
+nSample <- 500 # Number of samples
 
 # Ising parameters:
 Graph <- matrix(sample(0:1,N^2,TRUE,prob = c(0.8, 0.2)),N,N) * runif(N^2,0.5,2)
@@ -110,6 +110,9 @@ data2 <- IsingSampler(nSample, Graph, Thresh)
 # and between 3 and 6 (can be list(c(2,1),c(6,3)) as well)
 Res_1 <- NCT(data1, data2, gamma=0, it=10, binary.data = TRUE, 
 test.edges=TRUE, edges=list(c(1,2),c(3,6)))
+
+## Plotting of NCT results
+## See the help file of plot.NCT for more information about the plotting function and its arguments
 
 # Plot results of the network structure invariance test (not reliable with only 10 permutations!):
 plot(Res_1, what="network")

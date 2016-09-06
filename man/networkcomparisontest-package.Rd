@@ -12,7 +12,7 @@ This permutation based hypothesis test, suited for gaussian and binary data, ass
 Package: \tab NetworkComparisonTest\cr
 Type: \tab Package\cr
 Version: \tab 2.0.0\cr
-Date: \tab 2016-8-2\cr
+Date: \tab 2016-9-6\cr
 License: \tab GPL-2\cr
 }
 }
