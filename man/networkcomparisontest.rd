@@ -33,7 +33,7 @@ Logical. Can be TRUE or FALSE to indicate whether the data is binary or not. If 
 Logical. Can be TRUE of FALSE to indicate whether the samples are dependent or not. If paired is TRUE, relabeling is performed within each pair of observations. If paired is FALSE, relabeling is not restricted to pairs of observations. Note that, currently, dependent data is assumed to entail one group measured twice.
 }
   \item{weighted}{
-Logical. Can be TRUE of FALSE to indicate whether the networks to be compared should be weigthed of not. If not, the estimated networks are dichotomized. Defaults to TRUE.
+Logical. Can be TRUE of FALSE to indicate whether the networks to be compared should be weighted of not. If not, the estimated networks are dichotomized. Defaults to TRUE.
 }
   \item{AND}{
 Logical. Can be TRUE of FALSE to indicate whether the AND-rule or the OR-rule should be used to define the edges in the network. Defaults to TRUE. Only necessary for binary data.
@@ -60,8 +60,8 @@ NCT returns a 'NCT' object that contains the following items:
 \item{nwinv.pval }{The p value resulting from the permutation test concerning the maximum difference in edge weights.}
 \item{einv.pvals}{The Holm-Bonferroni corrected p values per edge from the permutation test concerning differences in edges weights. Only if test.edges = TRUE.}
 \item{edges.tested}{The pairs of variables between which the edges are called to be tested. Only if test.edges = TRUE.}
-\item{einv.real}{The value of the difference in edge weigth of the observed networks (multiple values if more edges are called to test). Only if test.edges = TRUE.}
-\item{einv.perm}{The values of the difference in edge weigth of the permuted networks. Only if test.edges = TRUE.}
+\item{einv.real}{The value of the difference in edge weight of the observed networks (multiple values if more edges are called to test). Only if test.edges = TRUE.}
+\item{einv.perm}{The values of the difference in edge weight of the permuted networks. Only if test.edges = TRUE.}
 }
 
 \references{
@@ -71,7 +71,7 @@ Good, P.I. Permutation, parametric and bootstrap tests of hypotheses. Vol. 3. Ne
 
 van Borkulo, C. D., Boschloo, L., Borsboom, D., Penninx, B. W. J. H., Waldorp, L. J., & Schoevers, R.A. (2015). Association of symptom network structure with the course of depression. JAMA Psychiatry. 2015;72(12). doi:10.1001/jamapsychiatry.2015.2079
 
-van Borkulo, C. D., Boschloo, Kossakowski, J., Tio, P., L., Schoevers, R.A., Borsboom, D., & , Waldorp, L. J. (2016). Comparing network structures on three aspects: A permutation test. Manuscript submitted. 
+van Borkulo, C. D., Boschloo, Kossakowski, J., Tio, P., L., Schoevers, R.A., Borsboom, D., & , Waldorp, L. J. (2016). Comparing network structures on three aspects: A permutation test. Manuscript submitted for publication. 
 }
 \author{
 Claudia D. van Borkulo, with contributions from Sacha Epskamp and Alex Millner
