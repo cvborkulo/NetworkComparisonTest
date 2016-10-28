@@ -19,6 +19,6 @@ Description: This permutation based hypothesis test, suited for Gaussian and
     edge invariance). Network structures are estimated with l1-regularized partial
     correlations (Gaussian data) or with l1-regularized logistic regression (eLasso,
     binary data). Suited for comparison of independent and dependent samples
-    (currently, only for one group measured twice)!
+    (currently, only for one group measured twice).
 License: GPL-2
 RoxygenNote: 5.0.1
