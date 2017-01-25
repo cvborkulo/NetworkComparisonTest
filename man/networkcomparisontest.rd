@@ -47,6 +47,10 @@ Character or list. When 'all', differences between all individual edges are test
   \item{progressbar}{
 Logical. Should the pbar be plotted in order to see the progress of the estimation procedure? Defaults to TRUE.
 }
+\item{corMethod}{Correlation method, used when \code{binary.data = FALSE}. \code{"cor_auto"} uses \code{\link[qgraph]{cor_auto}} for polychoric and polyserial correlations, \code{"cov"} uses the \code{\link{cov}} function for covariances, \code{"cor"} will use the \code{\link{cor}} function for correlations and \code{"npn"} will apply the nonparanormal transformation (via \code{\link[huge]{huge.npn}}) and then compute correlations.}
+\item{missing}{How to handle missing data  when \code{binary.data = FALSE}? \code{"pairwise"} for pairwise deletion, \code{"listwise"} for listwise deletion and \code{"stop"} to stop with an error.}
+\item{sampleSize}{How will sample size be computed when \code{binary.data = FALSE}? \code{"maximum"} takes total number of rows including rows with NA, and \code{"minimum"} takes total number of rows that contain no NA.}
+\item{corArgs}{A list with arguments for the function used defined by \code{corMethod}. Only used when \code{binary.data = FALSE}.}
 }
 
 \value{
