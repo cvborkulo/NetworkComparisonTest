@@ -27,7 +27,7 @@ A single value between 0 and 1. When not entered, gamma is set to 0.25 for binar
 The number of iterations (permutations).
 }
   \item{binary.data}{
-Logical. Can be TRUE or FALSE to indicate whether the data is binary or not. If binary.data is FALSE, the data is regarded gaussian.
+Logical. Can be TRUE or FALSE to indicate whether the data is binary or not. If TRUE, the \code{\link[IsingFit]{IsingFit}} function from the IsingFit package is used. If binary.data is FALSE, the data is regarded gaussian and the \code{\link[bootnet]{estimateNetwork}} function from the bootnet package is used. This calls the \code{\link[qgraph]{EBICglasso}} function from qgraph.
 }
   \item{paired}{
 Logical. Can be TRUE of FALSE to indicate whether the samples are dependent or not. If paired is TRUE, relabeling is performed within each pair of observations. If paired is FALSE, relabeling is not restricted to pairs of observations. Note that, currently, dependent data is assumed to entail one group measured twice.
