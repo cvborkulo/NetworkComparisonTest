@@ -1,4 +1,5 @@
-NCT <- function(data1, data2, gamma, it = 100, binary.data=FALSE, paired=FALSE, weighted=TRUE, AND=TRUE, test.edges=FALSE, edges, progressbar=TRUE, method = c("permute", "bootstrap")){ 
+NCT <- function(data1, data2, gamma, it = 100, binary.data=FALSE, paired=FALSE, weighted=TRUE, AND=TRUE, test.edges=FALSE, edges, 
+                progressbar=TRUE, method = c("permute", "bootstrap"), bootcut=c("cutEqual", "none")){ 
   
   if (missing(gamma)){
     if (binary.data){
@@ -42,100 +43,67 @@ NCT <- function(data1, data2, gamma, it = 100, binary.data=FALSE, paired=FALSE, 
   }
   
   
-  #####################################
-  ###    Calculate real values      ###
-  #####################################
-  ## NONBINARY DATA
-  if(binary.data==FALSE) 
-  {
-    nw1 <- EBICglasso(cor(x1),nrow(x1),gamma=gamma)
-    nw2 <- EBICglasso(cor(x2),nrow(x2),gamma=gamma)
-    if(weighted==FALSE){
-      nw1=(nw1!=0)*1
-      nw2=(nw2!=0)*1
-    }
-    
-    ##### Invariance measures #####
-    
-    ## Global strength invariance
-    glstrinv.real <- abs(sum(abs(nw1[upper.tri(nw1)]))-sum(abs(nw2[upper.tri(nw2)])))
-    # global strength of individual networks
-    glstrinv.sep <- c(sum(abs(nw1[upper.tri(nw1)])), sum(abs(nw2[upper.tri(nw2)])))
-    
-    ## Individual edge invariance
-    diffedges.real <- abs(nw1-nw2)[upper.tri(abs(nw1-nw2))] 
-    diffedges.realmat <- matrix(diffedges.real,it,nedges,byrow=TRUE)
-    diffedges.realoutput <- abs(nw1-nw2)
-    
-    ## Network structure invariance
-    nwinv.real <- max(diffedges.real)
-  }
-  
-  ## BINARY DATA
-  ## Real data
-  if(binary.data==TRUE) 
-  {
-    IF1 <- IsingFit(x1, AND = AND, gamma=gamma, plot=FALSE, progressbar=FALSE)
-    IF2 <- IsingFit(x2, AND = AND, gamma=gamma, plot=FALSE, progressbar=FALSE)
-    nw1 <- IF1$weiadj
-    nw2 <- IF2$weiadj
-    if(weighted==FALSE){
-      nw1=(nw1!=0)*1
-      nw2=(nw2!=0)*1
-    }
-    
-    ##### Invariance measures #####
-    
-    ## Global strength invariance
-    glstrinv.real <- abs(sum(abs(nw1[upper.tri(nw1)]))-sum(abs(nw2[upper.tri(nw2)])))
-    # global strength of individual networks
-    glstrinv.sep <- c(sum(abs(nw1[upper.tri(nw1)])), sum(abs(nw2[upper.tri(nw2)])))
-    
-    ## Individual edge invariance
-    diffedges.real <- abs(nw1-nw2)[upper.tri(abs(nw1-nw2))] 
-    diffedges.realmat <- matrix(diffedges.real,it,nedges,byrow=TRUE)
-    diffedges.realoutput <- abs(nw1-nw2)
-    
-    ## Network structure invariance
-    nwinv.real <- max(diffedges.real)
-    
-  }
-  
-  ## The code below checks for a violation through a variance differences as in Turluin et al., 2016
-  if(binary.data == TRUE) {
-    binvar <- function(x) {mean(x)*(1-mean(x))}
-    nw1Var <- apply(x1, 2, binvar)
-    nw2Var <- apply(x2, 2, binvar)
-  }
-  if(binary.data == FALSE) {
-    nw1Var <- apply(x1, 2, var)
-    nw2Var <- apply(x2, 2, var)
-  }
-  
-  nw1Centrality <- apply(nw1, 2, sum)
-  nw2Centrality <- apply(nw2, 2, sum)
-  
-  
-  nw1VarAssum <- suppressWarnings(try(cor.test(nw1Centrality, nw1Var), silent = TRUE))
-  nw2VarAssum <- try(cor.test(nw2Centrality, nw2Var), silent = TRUE)
-  
-  if(is.na(nw1VarAssum$p.value) || is.na(nw1VarAssum$p.value)) {
-    print("WARNING: Possible violation of assumption, correlation of item centrality/variance returns an error")
-  } else {
-    if(nw1VarAssum$p.value < 0.05) {
-      print("WARNING: Violation of assumption, restricted variance of variables in x1 drives network structure")
-      print("Correlation between variance and strength centrality")
-      print(nw1VarAssum$estimate)
-      print(c("p =", nw1VarAssum$p.value))
-    }
-    if(nw2VarAssum$p.value < 0.05) {
-      print("WARNING: Violation of assumption, restricted variance of variables in x2 drives network structure")
-      print("Correlation between variance and strength centrality")
-      print(nw2VarAssum$estimate)
-      print(c("p =", nw2VarAssum$p.value))
-    }
-  }
   if(method == "permute") {
+    
+    #####################################
+    ###    Calculate real values      ###
+    #####################################
+    ## NONBINARY DATA
+    if(binary.data==FALSE) 
+    {
+      nw1 <- EBICglasso(cor(x1),nrow(x1),gamma=gamma)
+      nw2 <- EBICglasso(cor(x2),nrow(x2),gamma=gamma)
+      if(weighted==FALSE){
+        nw1=(nw1!=0)*1
+        nw2=(nw2!=0)*1
+      }
+      
+      ##### Invariance measures #####
+      
+      ## Global strength invariance
+      glstrinv.real <- abs(sum(abs(nw1[upper.tri(nw1)]))-sum(abs(nw2[upper.tri(nw2)])))
+      # global strength of individual networks
+      glstrinv.sep <- c(sum(abs(nw1[upper.tri(nw1)])), sum(abs(nw2[upper.tri(nw2)])))
+      
+      ## Individual edge invariance
+      diffedges.real <- abs(nw1-nw2)[upper.tri(abs(nw1-nw2))] 
+      diffedges.realmat <- matrix(diffedges.real,it,nedges,byrow=TRUE)
+      diffedges.realoutput <- abs(nw1-nw2)
+      
+      ## Network structure invariance
+      nwinv.real <- max(diffedges.real)
+    }
+    
+    ## BINARY DATA
+    ## Real data
+    if(binary.data==TRUE) 
+    {
+      IF1 <- IsingFit(x1, AND = AND, gamma=gamma, plot=FALSE, progressbar=FALSE)
+      IF2 <- IsingFit(x2, AND = AND, gamma=gamma, plot=FALSE, progressbar=FALSE)
+      nw1 <- IF1$weiadj
+      nw2 <- IF2$weiadj
+      if(weighted==FALSE){
+        nw1=(nw1!=0)*1
+        nw2=(nw2!=0)*1
+      }
+      
+      ##### Invariance measures #####
+      
+      ## Global strength invariance
+      glstrinv.real <- abs(sum(abs(nw1[upper.tri(nw1)]))-sum(abs(nw2[upper.tri(nw2)])))
+      # global strength of individual networks
+      glstrinv.sep <- c(sum(abs(nw1[upper.tri(nw1)])), sum(abs(nw2[upper.tri(nw2)])))
+      
+      ## Individual edge invariance
+      diffedges.real <- abs(nw1-nw2)[upper.tri(abs(nw1-nw2))] 
+      diffedges.realmat <- matrix(diffedges.real,it,nedges,byrow=TRUE)
+      diffedges.realoutput <- abs(nw1-nw2)
+      
+      ## Network structure invariance
+      nwinv.real <- max(diffedges.real)
+      
+    }
+    
     #####################################
     ###    Nonbinary Permutation      ###
     #####################################
@@ -253,7 +221,6 @@ NCT <- function(data1, data2, gamma, it = 100, binary.data=FALSE, paired=FALSE, 
       
       
     }
-    
     
     #################################
     ###    Binary Permutation     ###
@@ -414,11 +381,9 @@ NCT <- function(data1, data2, gamma, it = 100, binary.data=FALSE, paired=FALSE, 
     einv$ci <- data.frame(matrix(NA, nedges, 3)) ## Create an empty data frame for confidence intervals of edges
     einv$ci[,1] <- edgelistVec
     colnames(einv$ci) <- c("Edge", "2.5%", "97.5%")
-    einv$t0 <- data.frame(matrix(NA, nedges, 2)) ## Creating a t0 data frame for edges. This will keep output consistent within the bootstrap, rather than using a matrix like in the permutation output
-    einv$t0[,1] <- edgelistVec
-    einv$t0[,2] <- diffedges.realoutput[upper.tri(diffedges.realoutput, diag=FALSE)] ## Fill with real values
-    colnames(einv$t0) <- c("Edge", "t0")
-    
+    einv$est <- data.frame(matrix(NA, nedges, 2)) ## Creating an estimate data frame for edges. This will keep output consistent within the bootstrap, rather than using a matrix like in the permutation output
+    einv$est[,1] <- edgelistVec
+    colnames(einv$est) <- c("Edge", "Estimate")
     
     
     #################################################
@@ -433,15 +398,19 @@ NCT <- function(data1, data2, gamma, it = 100, binary.data=FALSE, paired=FALSE, 
         division <- split(x, x$group)                       ## Split the bootstrapped sample by the "group" column 
         div1 <- division[[1]][,ncolall]                     ## Define the x1 half as div1, and cut off the "group" column
         div2 <- division[[2]][,ncolall]                     ## Define the x2 half as div2, and cut off the "group" column
+        if(match.arg(bootcut)=="cutEqual") {
+          if(dim(div1)[1]<dim(div2)[1]){div2 <- div2[-sample(1:dim(div2)[1], abs(dim(div1)[1]-dim(div2)[1])),]}
+          if(dim(div1)[1]>dim(div2)[1]){div1 <- div1[-sample(1:dim(div1)[1], abs(dim(div1)[1]-dim(div2)[1])),]}
+        } else {}
         nw1 <- EBICglasso(cor(div1),nrow(div1),gamma=gamma) ## Generate a network for div1
         nw2 <- EBICglasso(cor(div2),nrow(div2),gamma=gamma) ## Generate a network for div2
         if(weighted==FALSE){                                ## If unweighted, reassign values as 0 or 1
           nw1=(nw1!=0)*1
           nw2=(nw2!=0)*1 
         }
-        glstrinv$t[i] <- abs(sum(abs(nw1[upper.tri(nw1)]))-sum(abs(nw2[upper.tri(nw2)]))) ## Calculate the global strength invariance for this bootstrapped sample
-        einv$t[i,] <- abs(nw1-nw2)[upper.tri(abs(nw1-nw2), diag=FALSE)]  ## Compute a vector of all edge invariances for this sample
-        nwinv$t[i] <- max(einv$t[i,]) ## Compute network structure invariance for this sample
+        glstrinv$t[i] <- sum(abs(nw1[upper.tri(nw1)]))-sum(abs(nw2[upper.tri(nw2)])) ## Calculate the global strength invariance for this bootstrapped sample
+        einv$t[i,] <- (nw1-nw2)[upper.tri((nw1-nw2), diag=FALSE)]  ## Compute a vector of all edge invariances for this sample
+        nwinv$t[i] <- max(abs(einv$t[i,])) ## Compute network structure invariance for this sample
         
         if (progressbar==TRUE) setTxtProgressBar(pb, i)
       }
@@ -460,6 +429,10 @@ NCT <- function(data1, data2, gamma, it = 100, binary.data=FALSE, paired=FALSE, 
         division <- split(x, x$group)                       ## Split the bootstrapped sample by the "group" column 
         div1 <- division[[1]][,ncolall]                     ## Define the x1 half as div1, and cut off the "group" column
         div2 <- division[[2]][,ncolall]                     ## Define the x2 half as div2, and cut off the "group" column
+        if(match.arg(bootcut)=="cutEqual") {
+          if(dim(div1)[1]<dim(div2)[1]){div2 <- div2[-sample(1:dim(div2)[1], abs(dim(div1)[1]-dim(div2)[1])),]}
+          if(dim(div1)[1]>dim(div2)[1]){div1 <- div1[-sample(1:dim(div1)[1], abs(dim(div1)[1]-dim(div2)[1])),]}
+        } else {}
         IF1 <- IsingFit(x1, AND = AND, gamma=gamma, plot=FALSE, progressbar=FALSE) ## Generate networks
         IF2 <- IsingFit(x2, AND = AND, gamma=gamma, plot=FALSE, progressbar=FALSE)
         nw1 <- IF1$weiadj
@@ -468,9 +441,9 @@ NCT <- function(data1, data2, gamma, it = 100, binary.data=FALSE, paired=FALSE, 
           nw1=(nw1!=0)*1
           nw2=(nw2!=0)*1 
         }
-        glstrinv$t[i] <- abs(sum(abs(nw1[upper.tri(nw1)]))-sum(abs(nw2[upper.tri(nw2)]))) ## Calculate the global strength invariance for this bootstrapped sample
-        einv$t[i,] <- abs(nw1-nw2)[upper.tri(abs(nw1-nw2), diag=FALSE)]  ## Compute a vector of all edge invariances for this sample
-        nwinv$t[i] <- max(einv$t[i,]) ## Compute network structure invariance for this sample
+        glstrinv$t[i] <- sum(abs(nw1[upper.tri(nw1)]))-sum(abs(nw2[upper.tri(nw2)])) ## Calculate the global strength invariance for this bootstrapped sample. Note: NOT an absolute value
+        einv$t[i,] <- (nw1-nw2)[upper.tri((nw1-nw2), diag=FALSE)]  ## Compute a vector of all edge invariances for this sample. Note: NOT absolute values
+        nwinv$t[i] <- max(abs(einv$t[i,])) ## Compute network structure invariance for this sample
         
         if (progressbar==TRUE) setTxtProgressBar(pb, i)
       }
@@ -486,27 +459,33 @@ NCT <- function(data1, data2, gamma, it = 100, binary.data=FALSE, paired=FALSE, 
       einv$ci[i, 2:3] <- quantile(einv$t[,i], probs = c(0.025, 0.975))[1:2]
     }
     
+    ##### Calculate estimated true values #####
+    
+    glstrinv.est <- quantile(glstrinv$t, probs = 0.5)
+    nwinv.est <- quantile(nwinv$t, probs = 0.5)
+    for(i in 1:nedges) {
+      einv$est[i,2] <- quantile(einv$t[,i], probs = 0.5)
+    }
+    
     ## Printing instructions
     if(test.edges) {
       res <- list()
-      res$glstrinv.real <- glstrinv.real
-      res$glstrinv.sep <- glstrinv.sep
+      res$glstrinv.est <- glstrinv.est
       res$glstrinv.ci <- glstrinv$ci
       res$glstrinv.t <- glstrinv$t
-      res$nwinv.real <- nwinv.real
+      res$nwinv.est <- nwinv.est
       res$nwinv.ci <- nwinv$ci
       res$nwinv.t <- nwinv$t
       res$edges.tested <- test.edges
-      res$einv <- data.frame(cbind(einv$t0, einv$ci[,2:3]))
+      res$einv <- data.frame(cbind(einv$est, einv$ci[,2:3]))
       res$method <- "bootstrap"
     }
     if(test.edges == FALSE) {
       res <- list()
       res$glstrinv.real <- glstrinv.real
-      res$glstrinv.sep <- glstrinv.sep
       res$glstrinv.ci <- glstrinv$ci
       res$glstrinv.t <- glstrinv$t
-      res$nwinv.real <- nwinv.real
+      res$nwinv.est <- nwinv.est
       res$nwinv.ci <- nwinv$ci
       res$nwinv.t <- nwinv$t
       res$edges.tested <- test.edges

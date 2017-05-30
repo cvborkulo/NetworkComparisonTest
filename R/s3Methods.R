@@ -14,10 +14,10 @@ summary.NCT <- function(x,...){
     )}
   if(x$method == "bootstrap") {
     cat("\n NETWORK INVARIANCE TEST
-        t0: ", x$nwinv.real,
+        estimate: ", x$nwinv.est,
         "\n Confidence interval", x$nwinv.ci,
         "\n\n GLOBAL STRENGTH INVARIANCE TEST
-        t0: ", x$glstrinv.real,
+        estimate: ", x$glstrinv.est,
         "\n Confidence interval: ", x$glstrinv.ci,
         "\n\n EDGE INVARIANCE TEST
         Edges tested?: ", x$edges.tested,
@@ -61,9 +61,9 @@ plot.NCT <- function(x,what = c("strength","network","edge"),...){
     if (what == "strength"){
       ## Plot results of the global strength invariance test:
       hist(x$glstrinv.t, main = "Global Strength Invariance", 
-           xlab = paste('t0=', round(x$glstrinv.real, 3), 'c.i=', round(x$glstrinv.ci[1], 3), 'to', round(x$glstrinv.ci[2], 3)),
+           xlab = paste('t0=', round(x$glstrinv.est, 3), 'c.i=', round(x$glstrinv.ci[1], 3), 'to', round(x$glstrinv.ci[2], 3)),
            xlim = c(min(x$glstrinv.t), max(x$glstrinv.t)))
-      abline(v = x$glstrinv.real, col = "grey", lwd = 2)
+      abline(v = x$glstrinv.est, col = "grey", lwd = 2)
       abline(v = x$glstrinv.ci[1], col = "blue", lty = 2, lwd = 2)
       abline(v = x$glstrinv.ci[2], col = "blue", lty = 2, lwd = 2)
     } 
@@ -72,9 +72,9 @@ plot.NCT <- function(x,what = c("strength","network","edge"),...){
       
       ## Plot results of the network invariance test:
       hist(x$nwinv.t, main = "Network Structure Invariance", 
-           xlab = paste('t0=', round(x$nwinv.real, 3), 'c.i=', round(x$nwinv.ci[1], 3), 'to', round(x$nwinv.ci[2], 3)),
+           xlab = paste('t0=', round(x$nwinv.est, 3), 'c.i=', round(x$nwinv.ci[1], 3), 'to', round(x$nwinv.ci[2], 3)),
            xlim = c(min(x$nwinv.t), max(x$nwinv.t)))        
-      abline(v = x$nwinv.real, col = "grey", lwd = 2)
+      abline(v = x$nwinv.est, col = "grey", lwd = 2)
       abline(v = x$nwinv.ci[1], col = "blue", lty = 2, lwd = 2)
       abline(v = x$nwinv.ci[2], col = "blue", lty = 2, lwd = 2)
     } 
