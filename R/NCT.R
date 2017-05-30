@@ -20,11 +20,6 @@ NCT <- function(data1, data2, gamma, it = 100, binary.data=FALSE, paired=FALSE, 
   ncolall <- 1:ncol(x1) ## This stores a vector for the length of the original number of columns in the data (before adding "group", below)
   nvars <- ncol(x1)
   nedges <- nvars*(nvars-1)/2
-  x1_grps <- x1 ## Create a copy of x1
-  x1_grps$group <- rep(1, nobs1) ## Add a "group" column to x1
-  x2_grps <- x2 ## Create a copy of x2
-  x2_grps$group <- rep(2, nobs2) ## Add a "group" column to x2
-  dataall_grps <- rbind(x1_grps, x2_grps) ## Create a combined dataset that also contains a "group" column
   
   glstrinv.perm <- glstrinv.real <- nwinv.real <- nwinv.perm <- c()
   diffedges.perm <- matrix(0,it,nedges) 
@@ -393,15 +388,14 @@ NCT <- function(data1, data2, gamma, it = 100, binary.data=FALSE, paired=FALSE, 
       
       ##### Run the bootstrap #####
       for(i in 1:it) {
-        x <- dataall_grps[sample(nrow(dataall_grps), dim(dataall_grps)[1], replace = TRUE),]      ## Create a bootstrapped sample of the combined data (both x1 and x2 at once). 
-        ## Because of the "group" column we added, we will know which data points belong to each group 
-        division <- split(x, x$group)                       ## Split the bootstrapped sample by the "group" column 
-        div1 <- division[[1]][,ncolall]                     ## Define the x1 half as div1, and cut off the "group" column
-        div2 <- division[[2]][,ncolall]                     ## Define the x2 half as div2, and cut off the "group" column
         if(match.arg(bootcut)=="cutEqual") {
-          if(dim(div1)[1]<dim(div2)[1]){div2 <- div2[-sample(1:dim(div2)[1], abs(dim(div1)[1]-dim(div2)[1])),]}
-          if(dim(div1)[1]>dim(div2)[1]){div1 <- div1[-sample(1:dim(div1)[1], abs(dim(div1)[1]-dim(div2)[1])),]}
-        } else {}
+          min_obs <- min(nrow(x1), nrow(x2))
+          div1 <- x1[sample(1:nrow(x1), size=min_obs, replace = TRUE),]
+          div2 <- x2[sample(1:nrow(x2), size=min_obs, replace = TRUE),]
+        } else {
+          div1 <- x1[sample(1:nrow(x1), size=nrow(x1), replace = TRUE),]
+          div2 <- x2[sample(1:nrow(x2), size=nrow(x2), replace = TRUE),]
+        }
         nw1 <- EBICglasso(cor(div1),nrow(div1),gamma=gamma) ## Generate a network for div1
         nw2 <- EBICglasso(cor(div2),nrow(div2),gamma=gamma) ## Generate a network for div2
         if(weighted==FALSE){                                ## If unweighted, reassign values as 0 or 1
@@ -425,16 +419,16 @@ NCT <- function(data1, data2, gamma, it = 100, binary.data=FALSE, paired=FALSE, 
       
       ##### Run the bootstrap #####
       for(i in 1:it) {
-        x <- dataall_grps[sample(nrow(dataall_grps), dim(dataall_grps)[1], replace = TRUE),]      ## Create a bootstrapped sample of the combined data (both x1 and x2 at once).
-        division <- split(x, x$group)                       ## Split the bootstrapped sample by the "group" column 
-        div1 <- division[[1]][,ncolall]                     ## Define the x1 half as div1, and cut off the "group" column
-        div2 <- division[[2]][,ncolall]                     ## Define the x2 half as div2, and cut off the "group" column
         if(match.arg(bootcut)=="cutEqual") {
-          if(dim(div1)[1]<dim(div2)[1]){div2 <- div2[-sample(1:dim(div2)[1], abs(dim(div1)[1]-dim(div2)[1])),]}
-          if(dim(div1)[1]>dim(div2)[1]){div1 <- div1[-sample(1:dim(div1)[1], abs(dim(div1)[1]-dim(div2)[1])),]}
-        } else {}
-        IF1 <- IsingFit(x1, AND = AND, gamma=gamma, plot=FALSE, progressbar=FALSE) ## Generate networks
-        IF2 <- IsingFit(x2, AND = AND, gamma=gamma, plot=FALSE, progressbar=FALSE)
+          min_obs <- min(nrow(x1), nrow(x2))
+          div1 <- x1[sample(1:nrow(x1), size=min_obs, replace = TRUE),]
+          div2 <- x2[sample(1:nrow(x2), size=min_obs, replace = TRUE),]
+        } else {
+          div1 <- x1[sample(1:nrow(x1), size=nrow(x1), replace = TRUE),]
+          div2 <- x2[sample(1:nrow(x2), size=nrow(x2), replace = TRUE),]
+        }
+        IF1 <- IsingFit(div1, AND = AND, gamma=gamma, plot=FALSE, progressbar=FALSE) ## Generate networks
+        IF2 <- IsingFit(div2, AND = AND, gamma=gamma, plot=FALSE, progressbar=FALSE)
         nw1 <- IF1$weiadj
         nw2 <- IF2$weiadj
         if(weighted==FALSE){                                ## If unweighted, reassign values as 0 or 1
