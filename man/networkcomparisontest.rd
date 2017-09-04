@@ -1,6 +1,7 @@
 \name{NetworkComparisonTest}
 \alias{NetworkComparisonTest}
 \alias{NCT}
+\alias{NCT_bootnet}
 \title{
 Statistical Comparison of Two Networks Based on Three Invariance Measures
 }
@@ -8,9 +9,16 @@ Statistical Comparison of Two Networks Based on Three Invariance Measures
 This permutation based hypothesis test, suited for gaussian and binary data, assesses the difference between two networks based on several invariance measures (network structure invariance, global strength invariance, edge invariance). Network structures are estimated with l1-regularized partial correlations (gaussian data) or with l1-regularized logistic regression (eLasso, binary data). Suited for comparison of independent and dependent samples (currently, only for one group measured twice).
 }
 \usage{
-NCT(data1, data2, gamma, it, binary.data=FALSE, paired=FALSE, 
-    weighted=TRUE, AND=TRUE, test.edges=FALSE, edges, 
-    progressbar=TRUE)
+NCT(data1, data2, gamma, it = 100, binary.data = FALSE,
+                 paired = FALSE, weighted = TRUE, AND = TRUE,
+                 test.edges = FALSE, edges, progressbar = TRUE,
+                 corMethod = c("cor", "cor_auto", "cov", "npn"),
+                 missing = c("listwise", "pairwise", "stop"),
+                 sampleSize = c("maximum", "minimim"), corArgs =
+                 list())
+    
+NCT_bootnet(object1, object2, it = 100, paired=FALSE, weighted=TRUE, 
+          AND=TRUE, test.edges=FALSE, edges, progressbar=TRUE)
 }
 
 \arguments{
@@ -20,6 +28,12 @@ One of two datasets. The dimension of the matrix is nobs x nvars; each row is a 
   \item{data2}{
 The other of two datasets. The dimension of the matrix is nobs x nvars; each row is a vector of observations of the variables. Must be cross-sectional data.
 }
+  \item{object1}{
+Results of the bootnet function \code{\link[bootnet]{estimateNetwork}}.
+}
+  \item{object2}{
+Results of the bootnet function \code{\link[bootnet]{estimateNetwork}}.
+}
   \item{gamma}{
 A single value between 0 and 1. When not entered, gamma is set to 0.25 for binary data and 0.50 for gaussian data. Networks are estimated with this value for hyperparameter gamma in the extended BIC.
 }
@@ -27,7 +41,7 @@ A single value between 0 and 1. When not entered, gamma is set to 0.25 for binar
 The number of iterations (permutations).
 }
   \item{binary.data}{
-Logical. Can be TRUE or FALSE to indicate whether the data is binary or not. If TRUE, the \code{\link[IsingFit]{IsingFit}} function from the IsingFit package is used. If binary.data is FALSE, the data is regarded gaussian and the \code{\link[bootnet]{estimateNetwork}} function from the bootnet package is used. This calls the \code{\link[qgraph]{EBICglasso}} function from qgraph.
+Logical. Can be TRUE or FALSE to indicate whether the data is binary or not. If TRUE, the \code{\link[IsingFit]{IsingFit}} function from the IsingFit package is used. If binary.data is FALSE, the data is regarded gaussian and the \code{\link[bootnet]{estimateNetwork}} function from the bootnet package is used, using the \code{\link[qgraph]{EBICglasso}} function from qgraph.
 }
   \item{paired}{
 Logical. Can be TRUE of FALSE to indicate whether the samples are dependent or not. If paired is TRUE, relabeling is performed within each pair of observations. If paired is FALSE, relabeling is not restricted to pairs of observations. Note that, currently, dependent data is assumed to entail one group measured twice.

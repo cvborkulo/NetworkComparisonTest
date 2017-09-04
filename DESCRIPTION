@@ -1,7 +1,7 @@
 Package: NetworkComparisonTest
 Type: Package
 Title: Statistical Comparison of Two Networks Based on Three Invariance Measures
-Version: 2.0.1
+Version: 2.1
 Date: 2016-10-28
 Author: Claudia D. van Borkulo, with contributions from Sacha Epskamp and Alex Millner
 Maintainer: Claudia van Borkulo <cvborkulo@gmail.com>
@@ -13,7 +13,8 @@ Imports:
     stats,
     graphics,
     utils,
-    bootnet
+    bootnet,
+    methods
 Description: This permutation based hypothesis test, suited for Gaussian and
     binary data, assesses the difference between two networks based on several
     invariance measures (network structure invariance, global strength invariance,

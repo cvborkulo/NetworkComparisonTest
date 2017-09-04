@@ -1,4 +1,5 @@
 export(NCT)
+export(NCT_bootnet)
 S3method(plot,NCT)
 S3method(summary,NCT)
 
@@ -10,3 +11,5 @@ importFrom("graphics", "hist", "points")
 importFrom("stats", "cor", "p.adjust")
 importFrom("utils", "setTxtProgressBar", "txtProgressBar")
 importFrom("bootnet", "bootnet_EBICglasso")
+  importFrom("methods", "is")
+  importFrom("utils", "combn")

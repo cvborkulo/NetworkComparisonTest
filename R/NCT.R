@@ -1,10 +1,34 @@
 NCT <- function(data1, data2, gamma, it = 100, binary.data=FALSE, paired=FALSE, weighted=TRUE, AND=TRUE, test.edges=FALSE, edges, progressbar=TRUE,
                 # Arguments for correlations GGM:
-                corMethod = c("cor_auto","cov","cor","npn"), # Correlation method
-                missing = c("pairwise","listwise","stop"),
+                corMethod = c("cor","cor_auto","cov","npn"), # Correlation method
+                missing = c("listwise","pairwise","stop"),
                 sampleSize = c("maximum","minimim"),
                 corArgs = list() 
                 ){ 
+  # If data1 and data2 are bootnet objects, run NCT_bootnet instead.
+  if (is(data1,"bootnetResult") & is(data2,"bootnetResult")){
+    Results <- NCT_bootnet(data1,data2,paired=paired, weighted=weighted, AND=AND, test.edges=test.edges, edges=edges, progressbar=progressbar)
+    return(Results)
+  }
+  
+  # Check if not one is bootnet and other isn't:
+  if (is(data1,"bootnetResult") & !is(data2,"bootnetResult")){
+    stop("'data1' is a bootnet object but 'data2' isn't.")
+  }
+  
+  if (!is(data1,"bootnetResult") & is(data2,"bootnetResult")){
+    stop("'data2' is a bootnet object but 'data1' isn't.")
+  }
+  
+  # Some extra stuff of Sacha:
+  # If 'edges' is missing, default to all possible edges:
+  if (isTRUE(test.edges) && missing(edges)){
+    combs <- t(combn(1:ncol(data1),2))
+    edges <- list()
+    for (i in 1:nrow(combs)){
+      edges[[i]] <- combs[i,]
+    }
+  }
   
   # Check arguments:
   corMethod <- match.arg(corMethod)
