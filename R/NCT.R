@@ -7,7 +7,7 @@ NCT <- function(data1, data2, gamma, it = 100, binary.data=FALSE, paired=FALSE, 
                 ){ 
   # If data1 and data2 are bootnet objects, run NCT_bootnet instead.
   if (is(data1,"bootnetResult") & is(data2,"bootnetResult")){
-    Results <- NCT_bootnet(data1,data2,paired=paired, weighted=weighted, AND=AND, test.edges=test.edges, edges=edges, progressbar=progressbar)
+    Results <- NCT_bootnet(data1,data2,it=it,paired=paired, weighted=weighted, AND=AND, test.edges=test.edges, edges=edges, progressbar=progressbar)
     return(Results)
   }
   
@@ -23,11 +23,12 @@ NCT <- function(data1, data2, gamma, it = 100, binary.data=FALSE, paired=FALSE, 
   # Some extra stuff of Sacha:
   # If 'edges' is missing, default to all possible edges:
   if (isTRUE(test.edges) && missing(edges)){
-    combs <- t(combn(1:ncol(data1),2))
-    edges <- list()
-    for (i in 1:nrow(combs)){
-      edges[[i]] <- combs[i,]
-    }
+    # combs <- t(combn(1:ncol(data1),2))
+    # edges <- list()
+    # for (i in 1:nrow(combs)){
+    #   edges[[i]] <- combs[i,]
+    # }
+    edges <- 'all'
   }
   
   # Check arguments:

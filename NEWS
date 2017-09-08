@@ -3,3 +3,4 @@ Changes in version 2.1 (Sacha's fork)
   o Changed EBICglasso estimation to use estimateNetwork. Defaults set in such a way that estimation is identical to previous versions of NetworkComparisonTest (listwise deletion and cor()), but added some arguments also used in estimateNetwork.
   o The 'edges' argument now defaults to a list of all edges.
   o The NCT_cor_auto function has been removed (functionality now implemented in NCT_bootnet)
+  o Fixed a bug using edges = "all"

@@ -144,8 +144,9 @@ NCT_bootnet <- function(object1, object2, it = 100, paired=FALSE, weighted=TRUE,
       edges.pval.HBall[upper.tri(edges.pval.HBall,diag=FALSE)] <- ept.HBall 
       rownames(edges.pval.HBall) <- colnames(edges.pval.HBall) <- colnames(data1)
       einv.pvals <- melt(edges.pval.HBall, na.rm=TRUE, value.name = 'p-value')
+      einv.perm <- einv.perm.all
+      einv.real <- diffedges.realoutput
     }
-    
     
     if(is.list(edges))
     {
