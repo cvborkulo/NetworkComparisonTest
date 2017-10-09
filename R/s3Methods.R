@@ -28,6 +28,19 @@ summary.NCT <- function(x,...){
   }
 }
 
+print.NCT <- function(x,...){
+  class(x) <- NULL
+  if(x$method == "permute") {
+    print(x)
+  }
+  if(x$method=="bootstrap"){
+    badItems <- c("glstrinv.t", "edgeinv.t")
+    x[which(names(x) %in% badItems)] <- NULL
+    x$edgeinv.mat <- head(x$edgeinv.mat)
+    print(x)
+  } 
+}
+
 plot.NCT <- function(x,what = c("strength","network","edge"),...){
   
   what <- match.arg(what)
