@@ -1,31 +1,31 @@
-summary.NCT <- function(x,...){
-  if(x$method == "permute") {
+summary.NCT <- function(object,...){
+  if(object$method == "permute") {
     cat("\n NETWORK INVARIANCE TEST
-        Test statistic M: ", x$nwinv.real,
-        "\n p-value", x$nwinv.pval,
+        Test statistic M: ", object$nwinv.real,
+        "\n p-value", object$nwinv.pval,
         "\n\n GLOBAL STRENGTH INVARIANCE TEST
-        Global strength per group: ", x$glstrinv.sep,
-        "\n Test statistic S: ", x$glstrinv.real,
-        "\n p-value", x$glstrinv.pval,
+        Global strength per group: ", object$glstrinv.sep,
+        "\n Test statistic S: ", object$glstrinv.real,
+        "\n p-value", object$glstrinv.pval,
         "\n\n EDGE INVARIANCE TEST
-        Edges tested: ", x$edges.tested,
-        "\n Test statistic E: ", x$einv.real,
-        "\n p-value", x$einv.pvals
+        Edges tested: ", object$edges.tested,
+        "\n Test statistic E: ", object$einv.real,
+        "\n p-value", object$einv.pvals
     )}
-  if(x$method == "bootstrap") {
+  if(object$method == "bootstrap") {
     cat("\n NETWORK INVARIANCE TEST
-        estimate: ", x$nwinv.est,
-        "\n Confidence interval", x$nwinv.ci,
+        estimate: ", object$nwinv.est,
+        "\n Confidence interval", object$nwinv.ci,
         "\n\n GLOBAL STRENGTH INVARIANCE TEST
-        estimate: ", x$glstrinv.est,
-        "\n Confidence interval: ", x$glstrinv.ci,
+        estimate: ", object$glstrinv.est,
+        "\n Confidence interval: ", object$glstrinv.ci,
         "\n\n EDGE INVARIANCE TEST
-        Edges tested?: ", x$edges.tested,
+        Edges tested?: ", object$edges.tested,
         "\n Edge invariance summary: ",
-        head(x$edgeinv.mat),
+        head(object$edgeinv.mat),
         "\n"
     )
-    return(format.data.frame(x$einv, digits = 3))
+    return(format.data.frame(object$einv, digits = 3))
   }
 }
 

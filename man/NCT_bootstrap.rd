@@ -1,5 +1,5 @@
 \name{NCT_bootstrap}
-\alias{NetworkComparisonTest_bootstrap}
+\alias{NCT_bootstrap}
 \title{
 Statistical Comparison of Two Networks Using Bootstrapping
 }
@@ -7,9 +7,10 @@ Statistical Comparison of Two Networks Using Bootstrapping
 This bootstrapping methodology, suited for gaussian and binary data, assesses the effect size of the difference between two networks based on two invariance measures (global strength invariance, edge invariance). Network structures are estimated with Pearson correlations, partial correlations, l1-regularized partial correlations, or with l1-regularized logistic regression (eLasso, binary data). Suited for comparison of independent and dependent samples.
 }
 \usage{
-NCT_bootstrap <- function(data1, data2, nBoots = 500, default=c("association", "concentration", "EBICglasso", "IsingFit", "custom"), 
-                          paired=FALSE, weighted=TRUE, progressbar=TRUE, 
-                          bootcut=c("none", "cutEqual"), custom_func=NULL, AND=TRUE)
+NCT_bootstrap(data1, data2, nBoots = 500, 
+  default=c("association", "concentration", "EBICglasso", "IsingFit", "custom"), 
+  paired=FALSE, weighted=TRUE, progressbar=TRUE, 
+  bootcut=c("none", "cutEqual"), custom_func, AND=TRUE)
 }
 
 \arguments{
@@ -41,6 +42,9 @@ If "cutEqual" is specified, each group is resampled according to the sample size
   \item{custom_func}{
 A custom function if default is set to "custom". Should take participant data (e.g., x1) as the only input, and should output an adjacency matrix.
 }
+  \item{AND}{
+Logical. Can be TRUE of FALSE to indicate whether the AND-rule or the OR-rule should be used to define the edges in the network. Defaults to TRUE. Only necessary for binary data.
+}
 }
 
 \value{
@@ -58,8 +62,6 @@ a bootstrapped sample}
 
 }
 
-\references{
-}
 \author{
 Payton J. Jones
 
@@ -71,15 +73,14 @@ See also the website: http://cvborkulo.com
 }
 
 \examples{
-library("networktools")
+library("psych")
+data(bfi)
 
-# Use the two random halves of the "depression" dataset
-s1 <- sample(1:1000, 500)
-s2 <- c(1:1000)[-s1]
-data1 <- depression[s1,]
-data2 <- depression[s2,]
+# BFI dataset by gender
+data1 <- na.omit(bfi[bfi$gender==1,1:25])
+data2 <- na.omit(bfi[bfi$gender==2,1:25])
 
-Res_1 <- NCT_bootstrap(data1, data2, nBoots=10, default="IsingFit")
+Res_1 <- NCT_bootstrap(data1, data2, nBoots=100, default="association")
 
 ## Plotting of NCT results
 ## See the help file of plot.NCT for more information about the plotting function and its arguments

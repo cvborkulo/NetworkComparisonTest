@@ -1,6 +1,6 @@
 NCT_bootstrap <- function(data1, data2, nBoots = 500, default=c("association", "concentration", "EBICglasso", "IsingFit", "custom"), 
                           paired=FALSE, weighted=TRUE, progressbar=TRUE, 
-                          bootcut=c("none", "cutEqual"), custom_func=NULL, AND=TRUE){
+                          bootcut=c("none", "cutEqual"), custom_func, AND=TRUE){
   
   if (progressbar==TRUE) pb <- txtProgressBar(max=nBoots, style = 3)
   x1 <- data.frame(data1)
