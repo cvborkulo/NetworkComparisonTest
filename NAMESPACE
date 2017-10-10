@@ -1,6 +1,8 @@
 export(NCT)
+export(NCT_bootstrap)
 S3method(plot,NCT)
 S3method(summary,NCT)
+S3method(print,NCT)
 
 import(qgraph)
 import(IsingFit)

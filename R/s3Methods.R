@@ -22,6 +22,7 @@ summary.NCT <- function(x,...){
         "\n\n EDGE INVARIANCE TEST
         Edges tested?: ", x$edges.tested,
         "\n Edge invariance summary: ",
+        head(x$edgeinv.mat),
         "\n"
     )
     return(format.data.frame(x$einv, digits = 3))
@@ -37,6 +38,7 @@ print.NCT <- function(x,...){
     badItems <- c("glstrinv.t", "edgeinv.t")
     x[which(names(x) %in% badItems)] <- NULL
     x$edgeinv.mat <- head(x$edgeinv.mat)
+    cat("\n")
     print(x)
   } 
 }
@@ -79,17 +81,6 @@ plot.NCT <- function(x,what = c("strength","network","edge"),...){
       abline(v = x$glstrinv.est, col = "grey", lwd = 2)
       abline(v = x$glstrinv.ci[1], col = "blue", lty = 2, lwd = 2)
       abline(v = x$glstrinv.ci[2], col = "blue", lty = 2, lwd = 2)
-    } 
-    
-    if (what == "network"){
-      
-      ## Plot results of the network invariance test:
-      hist(x$nwinv.t, main = "Network Structure Invariance", 
-           xlab = paste('t0=', round(x$nwinv.est, 3), 'c.i=', round(x$nwinv.ci[1], 3), 'to', round(x$nwinv.ci[2], 3)),
-           xlim = c(min(x$nwinv.t), max(x$nwinv.t)))        
-      abline(v = x$nwinv.est, col = "grey", lwd = 2)
-      abline(v = x$nwinv.ci[1], col = "blue", lty = 2, lwd = 2)
-      abline(v = x$nwinv.ci[2], col = "blue", lty = 2, lwd = 2)
     } 
     
     if (what == "edge"){

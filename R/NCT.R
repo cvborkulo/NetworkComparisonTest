@@ -2,15 +2,6 @@ NCT <- function (data1, data2, gamma, it = 100, binary.data = FALSE,
           paired = FALSE, weighted = TRUE, AND = TRUE, test.edges = FALSE, 
           edges, progressbar = TRUE, method = c("permute", "bootstrap"), ...) 
 {
-  if(match.arg(method) == "bootstrap"){
-    if(binary.data){
-      default <- "IsingFit"
-    } else {
-      default <- "EBICglasso"
-    }
-    res <- NCT_bootstrap(data1, data2, nBoots=it, default=default,
-                         paired=paired, weighted=weighted, AND=AND, progressbar=progressbar)
-  } else {
   if (missing(gamma)) {
     if (binary.data) {
       gamma <- 0.25
@@ -19,6 +10,22 @@ NCT <- function (data1, data2, gamma, it = 100, binary.data = FALSE,
       gamma <- 0.5
     }
   }
+  
+  if(match.arg(method) == "bootstrap"){
+    if(binary.data){
+      fun <- function(x){
+        return(IsingFit::IsingFit(x, AND=AND, progressbar=FALSE, plot=F, gamma=gamma)$weiadj)
+      }
+    } else {
+      fun <- function(x){
+        a <- qgraph::EBICglasso(cor(x), n=dim(x)[1], gamma=gamma)
+        return(a)
+      }
+    }
+    res <- NCT_bootstrap(data1, data2, nBoots=it, default="custom", custom_func = fun,
+                         paired=paired, weighted=weighted, AND=AND, progressbar=progressbar)
+  } else {
+
   if (progressbar == TRUE) 
     pb <- txtProgressBar(max = it, style = 3)
   x1 <- data1
@@ -131,7 +138,7 @@ NCT <- function (data1, data2, gamma, it = 100, binary.data = FALSE,
                   nwinv.pval = sum(nwinv.perm >= nwinv.real)/it, 
                   nwinv.perm = nwinv.perm, edges.tested = edges.tested, 
                   einv.real = einv.real, einv.pvals = einv.pvals, 
-                  einv.perm = einv.perm)
+                  einv.perm = einv.perm, method="permute")
     }
     if (progressbar == TRUE) 
       close(pb)
@@ -140,7 +147,7 @@ NCT <- function (data1, data2, gamma, it = 100, binary.data = FALSE,
                   glstrinv.pval = sum(glstrinv.perm >= glstrinv.real)/it, 
                   glstrinv.perm = glstrinv.perm, nwinv.real = nwinv.real, 
                   nwinv.pval = sum(nwinv.perm >= nwinv.real)/it, 
-                  nwinv.perm = nwinv.perm)
+                  nwinv.perm = nwinv.perm, method="permute")
     }
   }
   if (binary.data == TRUE) {
@@ -263,7 +270,7 @@ NCT <- function (data1, data2, gamma, it = 100, binary.data = FALSE,
                   nwinv.perm = nwinv.perm, edges.tested = edges.tested, 
                   einv.real = einv.real, einv.pvals = einv.pvals, 
                   einv.perm = einv.perm,
-                  method="perm")
+                  method="permute")
     }
     if (progressbar == TRUE) 
       close(pb)
@@ -273,7 +280,7 @@ NCT <- function (data1, data2, gamma, it = 100, binary.data = FALSE,
                   glstrinv.perm = glstrinv.perm, nwinv.real = nwinv.real, 
                   nwinv.pval = sum(nwinv.perm >= nwinv.real)/it, 
                   nwinv.perm = nwinv.perm,
-                  method="perm")
+                  method="permute")
     }
   }
   class(res) <- "NCT"

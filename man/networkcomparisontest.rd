@@ -10,7 +10,7 @@ This permutation based hypothesis test, suited for gaussian and binary data, ass
 \usage{
 NCT(data1, data2, gamma, it, binary.data=FALSE, paired=FALSE, 
     weighted=TRUE, AND=TRUE, test.edges=FALSE, edges, 
-    progressbar=TRUE)
+    progressbar=TRUE, method=c("permute", "bootstrap"))
 }
 
 \arguments{
@@ -46,6 +46,10 @@ Character or list. When 'all', differences between all individual edges are test
 }
   \item{progressbar}{
 Logical. Should the pbar be plotted in order to see the progress of the estimation procedure? Defaults to TRUE.
+}
+  \item{method}{
+Default method="permute" is a permutation test, which returns a p-value. Use method="bootstrap" to return an estimated effect size with a confidence interval. 
+See also ?NCT_bootstrap
 }
 }
 

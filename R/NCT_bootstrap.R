@@ -1,5 +1,5 @@
-NCT_bootstrap <- function(data1, data2, nBoots = 50, default=c("association", "concentration", "EBICglasso", "IsingFit", "custom"), 
-                          paired=FALSE, weighted=TRUE, edges, progressbar=TRUE, 
+NCT_bootstrap <- function(data1, data2, nBoots = 500, default=c("association", "concentration", "EBICglasso", "IsingFit", "custom"), 
+                          paired=FALSE, weighted=TRUE, progressbar=TRUE, 
                           bootcut=c("none", "cutEqual"), custom_func=NULL, AND=TRUE){
   
   if (progressbar==TRUE) pb <- txtProgressBar(max=nBoots, style = 3)
@@ -44,7 +44,7 @@ NCT_bootstrap <- function(data1, data2, nBoots = 50, default=c("association", "c
     }
   } else if(match.arg(default)=="EBICglasso"){
     fun <- function(x){
-      return(EBICglasso(cor(x), n=dim(x)[1]))
+      return(qgraph::EBICglasso(cor(x), n=dim(x)[1]))
     }
   } else if(match.arg(default)=="IsingFit"){
     fun <- function(x){
@@ -57,11 +57,9 @@ NCT_bootstrap <- function(data1, data2, nBoots = 50, default=c("association", "c
   ##### Calculate real values #####
   nw1.real <- fun(x1) 
   nw2.real <- fun(x2)
-  glstrinv.real <- abs(sum(abs(nw1.real[upper.tri(nw1.real)])) - 
-                         sum(abs(nw2.real[upper.tri(nw2.real)])))
+  glstrinv.real <- abs(sum(abs(nw1.real[upper.tri(nw1.real)])) - sum(abs(nw2.real[upper.tri(nw2.real)])))
   glstrinv.sep <- c(sum(abs(nw1.real[upper.tri(nw1.real)])), sum(abs(nw2.real[upper.tri(nw2.real)])))
-  diffedges.real <- abs(nw1.real - nw2.real)[upper.tri(abs(nw1.real - 
-                                                             nw2.real))]
+  diffedges.real <- abs(nw1.real - nw2.real)[upper.tri(abs(nw1.real - nw2.real))]
   diffedges.realmat <- matrix(diffedges.real, nBoots, nedges, 
                               byrow = TRUE)
   diffedges.realoutput <- abs(nw1.real - nw2.real)
