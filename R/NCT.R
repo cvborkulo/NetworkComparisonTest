@@ -1,6 +1,6 @@
 NCT <- function (data1, data2, gamma, it = 100, binary.data = FALSE, 
           paired = FALSE, weighted = TRUE, AND = TRUE, test.edges = FALSE, 
-          edges, progressbar = TRUE, method = c("permute", "bootstrap"), ...) 
+          edges, progressbar = TRUE, method = c("permute", "bootstrap")) 
 {
   if (missing(gamma)) {
     if (binary.data) {

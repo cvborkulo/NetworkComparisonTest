@@ -9,7 +9,7 @@ Methods for NCT objects
 Plot method plots the NCT output, summary method returns a summary of the output.
 }
 \usage{
-\method{plot}{NCT}(x, what = c("network","edge","strength"), \dots)
+\method{plot}{NCT}(x, what = c("strength", "network", "edge"), \dots)
 \method{summary}{NCT}(object, \dots)
 }
 %- maybe also 'usage' for other objects documented here.
