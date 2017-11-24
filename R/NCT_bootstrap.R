@@ -1,7 +1,7 @@
 NCT_bootstrap <- function(data1, data2, nBoots = 500, 
                           default=c("association", "concentration", "EBICglasso", "IsingFit", "custom"), 
                           paired=FALSE, weighted=TRUE, progressbar=TRUE, 
-                          bootcut=c("none", "cutEqual"), custom_func, AND=TRUE){
+                          bootcut=c("none", "cutEqual"), custom_func, AND=TRUE, global.strength=c("absolute_value", "raw")){
   
   if (progressbar==TRUE) pb <- txtProgressBar(max=nBoots, style = 3)
   x1 <- data.frame(data1)
@@ -14,6 +14,15 @@ NCT_bootstrap <- function(data1, data2, nBoots = 500,
   ncolall <- 1:ncol(x1) ## This stores a vector for the length of the original number of columns in the data (before adding "group", below)
   nvars <- ncol(x1)
   nedges <- nvars*(nvars-1)/2
+  if(global.strength[1] == "aboslute_value"){
+    gl.str <- function(x){
+      return(abs(sum(abs(x[upper.tri(x)]))))
+    } 
+  } else if (global.strength[1] == "raw") {
+    gl.str <- function(x){
+      return(sum(x[upper.tri(x)]))
+    } 
+  }
 
   ## The next 7 lines generate an empty edgelist  
   ## We will store edge invariances in edgelist format, for ease with CIs
@@ -58,8 +67,8 @@ NCT_bootstrap <- function(data1, data2, nBoots = 500,
   ##### Calculate real values #####
   nw1.real <- fun(x1) 
   nw2.real <- fun(x2)
-  glstrinv.real <- abs(sum(abs(nw1.real[upper.tri(nw1.real)])) - sum(abs(nw2.real[upper.tri(nw2.real)])))
-  glstrinv.sep <- c(sum(abs(nw1.real[upper.tri(nw1.real)])), sum(abs(nw2.real[upper.tri(nw2.real)])))
+  glstrinv.real <- gl.str(nw1.real) - gl.str(nw2.real)
+  glstrinv.sep <- c(gl.str(nw1.real), gl.str(nw1.real))
   diffedges.real <- abs(nw1.real - nw2.real)[upper.tri(abs(nw1.real - nw2.real))]
   diffedges.realmat <- matrix(diffedges.real, nBoots, nedges, 
                               byrow = TRUE)
@@ -92,7 +101,7 @@ NCT_bootstrap <- function(data1, data2, nBoots = 500,
       nw2=(nw2!=0)*1 
     }
     
-    glstrinv$t[i] <- sum(abs(nw1[upper.tri(nw1)]))-sum(abs(nw2[upper.tri(nw2)])) ## Calculate the global strength invariance for this bootstrapped sample
+    glstrinv$t[i] <- gl.str(nw1)-gl.str(nw2) ## Calculate the global strength invariance for this bootstrapped sample
     einv$t[i,] <- (nw1-nw2)[upper.tri((nw1-nw2), diag=FALSE)]  ## Compute a vector of all edge invariances for this sample
 
     if (progressbar==TRUE) setTxtProgressBar(pb, i)
