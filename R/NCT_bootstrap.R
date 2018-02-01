@@ -1,7 +1,7 @@
 NCT_bootstrap <- function(data1, data2, nBoots = 500, 
                           default=c("association", "concentration", "EBICglasso", "IsingFit", "custom"), 
                           paired=FALSE, weighted=TRUE, progressbar=TRUE, 
-                          bootcut=c("none", "cutEqual"), custom_func, AND=TRUE, global.strength=c("absolute_value", "raw")){
+                          bootcut=c("none", "cutEqual"), custom_func, AND=TRUE, global.strength=c("raw", "absolute_value")){
   
   if (progressbar==TRUE) pb <- txtProgressBar(max=nBoots, style = 3)
   x1 <- data.frame(data1)
@@ -14,11 +14,11 @@ NCT_bootstrap <- function(data1, data2, nBoots = 500,
   ncolall <- 1:ncol(x1) ## This stores a vector for the length of the original number of columns in the data (before adding "group", below)
   nvars <- ncol(x1)
   nedges <- nvars*(nvars-1)/2
-  if(global.strength[1] == "aboslute_value"){
+  if(match.arg(global.strength) == "aboslute_value"){
     gl.str <- function(x){
       return(abs(sum(abs(x[upper.tri(x)]))))
     } 
-  } else if (global.strength[1] == "raw") {
+  } else if (match.arg(global.strength) == "raw") {
     gl.str <- function(x){
       return(sum(x[upper.tri(x)]))
     } 
@@ -68,7 +68,7 @@ NCT_bootstrap <- function(data1, data2, nBoots = 500,
   nw1.real <- fun(x1) 
   nw2.real <- fun(x2)
   glstrinv.real <- gl.str(nw1.real) - gl.str(nw2.real)
-  glstrinv.sep <- c(gl.str(nw1.real), gl.str(nw1.real))
+  glstrinv.sep <- c(gl.str(nw1.real), gl.str(nw2.real))
   diffedges.real <- abs(nw1.real - nw2.real)[upper.tri(abs(nw1.real - nw2.real))]
   diffedges.realmat <- matrix(diffedges.real, nBoots, nedges, 
                               byrow = TRUE)
