@@ -1,17 +1,25 @@
 NCT <- function(data1, data2, it = 100, 
                           default=c("association", "concentration", "EBICglasso", "IsingFit", "custom"), 
                           paired=FALSE, weighted=TRUE, progressbar=TRUE, test.edges=FALSE, edges,
-                          custom_func, AND=TRUE, global.strength=c("raw", "absolute_value")){
+                          custom_func, AND=TRUE, global=c("expectedInf", "strength")){
   
-  if(match.arg(global.strength) == "aboslute_value"){
-    gl.str <- function(x){
-      return(abs(sum(abs(x[upper.tri(x)]))))
-    } 
-  } else if (match.arg(global.strength) == "raw") {
-    gl.str <- function(x){
-      return(sum(x[upper.tri(x)]))
-    } 
-  }
+  global <- match.arg(global)
+  gl.str <- switch(global,
+                   strength = function(x){
+                     return(abs(sum(abs(x[upper.tri(x)]))))
+                   } ,
+                   expectedInf = function(x){
+                     return(sum(x[upper.tri(x)]))
+                   } )
+  #if(match.arg(global.strength) == "aboslute_value"){
+   # gl.str <- function(x){
+    #  return(abs(sum(abs(x[upper.tri(x)]))))
+  #  } 
+  #} else if (match.arg(global.strength) == "raw") {
+   # gl.str <- function(x){
+    #  return(sum(x[upper.tri(x)]))
+    #} 
+  #}
   
   ## From boot
   x1 <- data.frame(data1)
@@ -73,9 +81,9 @@ NCT <- function(data1, data2, it = 100,
       nw1 = (nw1 != 0) * 1
       nw2 = (nw2 != 0) * 1
     }
-    glstrinv.real <- abs(sum(abs(nw1[upper.tri(nw1)])) - 
-                           sum(abs(nw2[upper.tri(nw2)])))
-    glstrinv.sep <- c(sum(abs(nw1[upper.tri(nw1)])), sum(abs(nw2[upper.tri(nw2)])))
+    
+    glstrinv.real <- gl.str(nw1) - gl.str(nw2)
+    glstrinv.sep <- c(gl.str(nw1), gl.str(nw2))
     diffedges.real <- abs(nw1 - nw2)[upper.tri(abs(nw1 - 
                                                      nw2))]
     diffedges.realmat <- matrix(diffedges.real, it, nedges, 
@@ -107,8 +115,7 @@ NCT <- function(data1, data2, it = 100,
           r2perm = (r2perm != 0) * 1
         }
       }
-      glstrinv.perm[i] <- abs(sum(abs(r1perm[upper.tri(r1perm)])) - 
-                                sum(abs(r2perm[upper.tri(r2perm)])))
+      glstrinv.perm[i] <- gl.str(r1perm) - gl.str(r2perm) 
       diffedges.perm[i, ] <- abs(r1perm - r2perm)[upper.tri(abs(r1perm - 
                                                                   r2perm))]
       diffedges.permtemp[upper.tri(diffedges.permtemp, 
@@ -157,7 +164,7 @@ NCT <- function(data1, data2, it = 100,
                   nwinv.pval = sum(nwinv.perm >= nwinv.real)/it, 
                   nwinv.perm = nwinv.perm, edges.tested = edges.tested, 
                   einv.real = einv.real, einv.pvals = einv.pvals, 
-                  einv.perm = einv.perm, method="permute", global.strength=match.arg(global.strength),
+                  einv.perm = einv.perm, method="permute", global=match.arg(global),
                   default=match.arg(default))
     }
     if (progressbar == TRUE) 
@@ -167,12 +174,12 @@ NCT <- function(data1, data2, it = 100,
                   glstrinv.pval = sum(glstrinv.perm >= glstrinv.real)/it, 
                   glstrinv.perm = glstrinv.perm, nwinv.real = nwinv.real, 
                   nwinv.pval = sum(nwinv.perm >= nwinv.real)/it, 
-                  nwinv.perm = nwinv.perm, method="permute", global.strength=match.arg(global.strength),
+                  nwinv.perm = nwinv.perm, method="permute", global=match.arg(global),
                   default=match.arg(default))
     }
   
   class(res) <- "NCT"
   return(res)
-  message("This is the development version of NCT. Association networks and sum connectivity are used by default")
+  message("This is the development version of NCT. Association networks and global expected influence are used by default")
 }
 
