@@ -1,7 +1,9 @@
 NCT <- function(data1, data2, it = 100, 
                           default=c("association", "concentration", "EBICglasso", "IsingFit", "custom"), 
                           paired=FALSE, weighted=TRUE, progressbar=TRUE, test.edges=FALSE, edges,
-                          custom_func, AND=TRUE, global=c("expectedInf", "strength")){
+                          custom_func, AND=TRUE, global=c("expectedInf", "strength"),test.centralities=FALSE,
+                          centralities=c("Strength", "ExpectedInfluence", "Betweenness", "Closeness"), nodes,
+                          adjust=c("holm","fdr","BY", "none")){
   
   global <- match.arg(global)
   gl.str <- switch(global,
@@ -32,6 +34,20 @@ NCT <- function(data1, data2, it = 100,
   nvars <- ncol(x1)
   nedges <- nvars*(nvars-1)/2
   
+  ## Centrality
+  if(missing(nodes)){
+    nodes <- "all"
+  }
+  if(is.list(nodes)){
+    nodes<- unlist(nodes)
+  }
+  if(nodes=="all"){
+    nnodes <- nvars
+  } else {
+    nnodes <- length(nodes)
+  } 
+  diffcen.perm <- matrix(0, it, nnodes*length(centralities))
+  
   ## From original
   if (progressbar == TRUE) 
     pb <- txtProgressBar(max = it, style = 3)
@@ -50,6 +66,7 @@ NCT <- function(data1, data2, it = 100,
   einv.perm.all <- array(NA, dim = c(nvars, nvars, it))
   edges.pval.HBall <- matrix(NA, nvars, nvars)
   edges.pvalmattemp <- matrix(0, nvars, nvars)
+  cen.pvalmattemp <- matrix(0, nvars, 4)
   
 
   
@@ -90,6 +107,13 @@ NCT <- function(data1, data2, it = 100,
                                 byrow = TRUE)
     diffedges.realoutput <- abs(nw1 - nw2)
     nwinv.real <- max(diffedges.real)
+    if(test.centralities==TRUE){
+      cen1 <- centrality_auto(nw1)$node.centrality
+      cen2 <- centrality_auto(nw2)$node.centrality
+      cen1$ExpectedInfluence <- networktools::expectedInf(nw1)$step1
+      cen2$ExpectedInfluence <- networktools::expectedInf(nw2)$step1
+      diffcen.real <- abs(as.matrix(cen1) - as.matrix(cen2))
+    }
     for (i in 1:it) {
       if (paired == FALSE) {
         s <- sample(1:(nobs1 + nobs2), nobs1, replace = FALSE)
@@ -123,6 +147,18 @@ NCT <- function(data1, data2, it = 100,
       diffedges.permtemp <- diffedges.permtemp + t(diffedges.permtemp)
       einv.perm.all[, , i] <- diffedges.permtemp
       nwinv.perm[i] <- max(diffedges.perm[i, ])
+      if(test.centralities==TRUE){
+        cen1permtemp <- centrality_auto(r1perm)$node.centrality
+        cen2permtemp <- centrality_auto(r2perm)$node.centrality
+        cen1permtemp$ExpectedInfluence <- networktools::expectedInf(r1perm)$step1
+        cen2permtemp$ExpectedInfluence <- networktools::expectedInf(r2perm)$step1
+        diffcen.permtemp <- abs(as.matrix(cen1permtemp) - as.matrix(cen2permtemp))
+        if(nodes=="all"){
+          diffcen.perm[i,] <- melt(diffcen.permtemp[,centralities])$value
+        } else {
+          diffcen.perm[i,] <- melt(diffcen.permtemp[nodes,centralities])$value
+        } 
+      }
       if (progressbar == TRUE) 
         setTxtProgressBar(pb, i)
     }
@@ -131,7 +167,9 @@ NCT <- function(data1, data2, it = 100,
       edges.pvalmattemp[upper.tri(edges.pvalmattemp, diag = FALSE)] <- edges.pvaltemp
       edges.pvalmattemp <- edges.pvalmattemp + t(edges.pvalmattemp)
       if (is.character(edges)) {
-        ept.HBall <- p.adjust(edges.pvaltemp, method = "holm")
+        if(match.arg(adjust)=="none"){
+          ept.HBall <- edges.pvaltemp
+        } else {ept.HBall <- p.adjust(edges.pvaltemp, method = martch.arg(adjust))}
         edges.pval.HBall[upper.tri(edges.pval.HBall, 
                                    diag = FALSE)] <- ept.HBall
         rownames(edges.pval.HBall) <- colnames(edges.pval.HBall) <- colnames(data1)
@@ -154,30 +192,51 @@ NCT <- function(data1, data2, it = 100,
                                                     edges[[j]][2]]
           }
         }
-        HBcorrpvals <- p.adjust(uncorrpvals, method = "holm")
+        if(match.arg(adjust)=="none"){
+          HBcorrpvals <- uncorrpvals
+        } else {HBcorrpvals <- p.adjust(uncorrpvals, method = match.arg(adjust))}
         einv.pvals <- HBcorrpvals
       }
       edges.tested <- colnames(einv.perm)
-      res <- list(glstrinv.real = glstrinv.real, glstrinv.sep = glstrinv.sep, 
-                  glstrinv.pval = sum(glstrinv.perm >= glstrinv.real)/it, 
-                  glstrinv.perm = glstrinv.perm, nwinv.real = nwinv.real, 
-                  nwinv.pval = sum(nwinv.perm >= nwinv.real)/it, 
-                  nwinv.perm = nwinv.perm, edges.tested = edges.tested, 
-                  einv.real = einv.real, einv.pvals = einv.pvals, 
-                  einv.perm = einv.perm, method="permute", global=match.arg(global),
-                  default=match.arg(default))
+
+    }
+    if(test.centralities==TRUE){
+      if(nodes=="all"){
+        diffcen.real.vec <- melt(diffcen.real[,centralities])$value
+        nnodes <- nvars
+      } else {
+        diffcen.real.vec <- melt(diffcen.real[nodes,centralities])$value
+        nnodes <- length(nodes)
+      } 
+      diffcen.pvaltemp <- colSums(diffcen.perm >= diffcen.real.vec)/it
+      if(match.arg(adjust)=="none"){
+        diffcen.HBall <- diffcen.pvaltemp
+      } else {diffcen.HBall <- p.adjust(diffcen.pvaltemp, method = match.arg(adjust))}
+      diffcen.pval <- matrix(diffcen.HBall, nnodes, length(centralities))
+      colnames(diffcen.pval) <- centralities
+      if(nodes=="all"){
+        rownames(diffcen.pval) <- rownames(diffcen.real)
+      } else {rownames(diffcen.pval) <- nodes}
     }
     if (progressbar == TRUE) 
       close(pb)
-    if (test.edges == FALSE) {
       res <- list(glstrinv.real = glstrinv.real, glstrinv.sep = glstrinv.sep, 
-                  glstrinv.pval = sum(glstrinv.perm >= glstrinv.real)/it, 
+                  glstrinv.pval = sum(abs(glstrinv.perm) >= abs(glstrinv.real))/it, 
                   glstrinv.perm = glstrinv.perm, nwinv.real = nwinv.real, 
                   nwinv.pval = sum(nwinv.perm >= nwinv.real)/it, 
                   nwinv.perm = nwinv.perm, method="permute", global=match.arg(global),
                   default=match.arg(default))
+    if(test.edges == TRUE){
+      res[["edges.tested"]] <- edges.tested
+      res[["einv.real"]] <- einv.real
+      res[["einv.pvals"]] <- einv.pvals
+      res[["einv.perm"]] <- einv.perm
     }
-  
+    if(test.centralities==TRUE){
+      res[["diffcen.real"]] <- diffcen.real
+      res[["diffcen.perm"]] <- diffcen.perm
+      res[["diffcen.pval"]] <- diffcen.pval
+    }
   class(res) <- "NCT"
   return(res)
   message("This is the development version of NCT. Association networks and global expected influence are used by default")
