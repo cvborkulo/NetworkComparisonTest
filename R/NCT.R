@@ -1,16 +1,16 @@
 NCT <- function(data1, data2, it = 100, 
                           default=c("association", "concentration", "EBICglasso", "IsingFit", "custom"), 
                           paired=FALSE, weighted=TRUE, progressbar=TRUE, test.edges=FALSE, edges,
-                          custom_func, AND=TRUE, global=c("expectedInf", "strength"),test.centralities=FALSE,
-                          centralities=c("Strength", "ExpectedInfluence", "Betweenness", "Closeness"), nodes,
+                          custom_func, AND=TRUE, global=c("ExpectedInfluence", "Strength"),test.centralities=FALSE,
+                          centralities=c("ExpectedInfluence", "Strength", "Betweenness", "Closeness"), nodes,
                           adjust=c("holm","fdr","BY", "none")){
   
   global <- match.arg(global)
   gl.str <- switch(global,
-                   strength = function(x){
+                   Strength = function(x){
                      return(abs(sum(abs(x[upper.tri(x)]))))
                    } ,
-                   expectedInf = function(x){
+                   ExpectedInfluence = function(x){
                      return(sum(x[upper.tri(x)]))
                    } )
   #if(match.arg(global.strength) == "aboslute_value"){
