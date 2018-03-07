@@ -10,7 +10,7 @@ This permutation based hypothesis test, suited for gaussian and binary data, ass
 \usage{
 NCT(data1, data2, gamma, it, binary.data=FALSE, paired=FALSE, 
     weighted=TRUE, AND=TRUE, test.edges=FALSE, edges, 
-    progressbar=TRUE)
+    progressbar=TRUE, make.positive.definite=TRUE)
 }
 
 \arguments{
@@ -47,7 +47,13 @@ Character or list. When 'all', differences between all individual edges are test
   \item{progressbar}{
 Logical. Should the pbar be plotted in order to see the progress of the estimation procedure? Defaults to TRUE.
 }
+  \item{make.positive.definite}{
+If \code{make.positive.definite = TRUE}, the covariance matrices used for the glasso are projected to the nearest positive definite matrices, if they are not yet positive definite. This is useful for small n, for which it is very likely that at least one of the bootstrap comparisons involves a covariance matrix that is not positive definite.}
+
+
 }
+
+
 
 \value{
 NCT returns a 'NCT' object that contains the following items:

@@ -1,4 +1,16 @@
-NCT <- function(data1, data2, gamma, it = 100, binary.data=FALSE, paired=FALSE, weighted=TRUE, AND=TRUE, test.edges=FALSE, edges, progressbar=TRUE){ 
+
+NCT <- function(data1, 
+                data2, 
+                gamma, 
+                it = 100, 
+                binary.data=FALSE, 
+                paired=FALSE, 
+                weighted=TRUE, 
+                AND=TRUE, 
+                test.edges=FALSE, 
+                edges, 
+                progressbar=TRUE,
+                make.positive.definite=TRUE){ 
   
   if (missing(gamma)){
     if (binary.data){
@@ -32,8 +44,21 @@ NCT <- function(data1, data2, gamma, it = 100, binary.data=FALSE, paired=FALSE, 
   ## Real data
   if(binary.data==FALSE) 
   {
-    nw1 <- EBICglasso(cor(x1),nrow(x1),gamma=gamma)
-    nw2 <- EBICglasso(cor(x2),nrow(x2),gamma=gamma)
+    
+    cor_x1 <- cor(x1)
+    cor_x2 <- cor(x2)
+
+    if(make.positive.definite){
+      # cor_x1 <- make.positive.definite(cor_x1)
+      # cor_x2 <- make.positive.definite(cor_x2)
+      cor_x1 <- matrix(nearPD(cor_x1, corr=TRUE)$mat, ncol = nvars)
+      cor_x1 <- (cor_x1 + t(cor_x1)) / 2 # make symmetric
+      cor_x2 <- matrix(nearPD(cor_x2, corr=TRUE)$mat, ncol = nvars)
+      cor_x2 <- (cor_x2 + t(cor_x2)) / 2 # make symmetric
+    }
+    
+    nw1 <- EBICglasso(cor_x1,nrow(x1),gamma=gamma)
+    nw2 <- EBICglasso(cor_x2,nrow(x2),gamma=gamma)
     if(weighted==FALSE){
       nw1=(nw1!=0)*1
       nw2=(nw2!=0)*1
@@ -63,13 +88,30 @@ NCT <- function(data1, data2, gamma, it = 100, binary.data=FALSE, paired=FALSE, 
         s <- sample(1:(nobs1+nobs2),nobs1,replace=FALSE)
         x1perm <- dataall[s,]
         x2perm <- dataall[b[-s],]
-        r1perm <- EBICglasso(cor(x1perm),nrow(x1perm),gamma=gamma)
-        r2perm <- EBICglasso(cor(x2perm),nrow(x2perm),gamma=gamma)
+        
+        cor_x1 <- cor(x1perm)
+        cor_x2 <- cor(x2perm)
+        
+        if(make.positive.definite){
+          # cor_x1 <- make.positive.definite(cor_x1)
+          # cor_x2 <- make.positive.definite(cor_x2)
+          cor_x1 <- matrix(nearPD(cor_x1, corr=TRUE)$mat, ncol = nvars)
+          cor_x1 <- (cor_x1 + t(cor_x1)) / 2 # make symmetric
+          cor_x2 <- matrix(nearPD(cor_x2, corr=TRUE)$mat, ncol = nvars)
+          cor_x2 <- (cor_x2 + t(cor_x2)) / 2 # make symmetric
+        }
+        
+        
+        
+        r1perm <- EBICglasso(cor_x1,nrow(x1perm),gamma=gamma)
+        r2perm <- EBICglasso(cor_x2,nrow(x2perm),gamma=gamma)
         if(weighted==FALSE){
           r1perm=(r1perm!=0)*1
           r2perm=(r2perm!=0)*1
         }
       }
+      
+      
       
       if(paired==TRUE)
       {
@@ -78,6 +120,20 @@ NCT <- function(data1, data2, gamma, it = 100, binary.data=FALSE, paired=FALSE, 
         x1perm <- rbind(x1perm,x2[s==2,])
         x2perm <- x2[s==1,]
         x2perm <- rbind(x2perm,x1[s==2,])
+        
+        cor_x1 <- cor(x1perm)
+        cor_x2 <- cor(x2perm)
+        
+        if(make.positive.definite){
+          # cor_x1 <- make.positive.definite(cor_x1)
+          # cor_x2 <- make.positive.definite(cor_x2)
+          cor_x1 <- matrix(nearPD(cor_x1, corr=TRUE)$mat, ncol = nvars)
+          cor_x1 <- (cor_x1 + t(cor_x1)) / 2 # make symmetric
+          cor_x2 <- matrix(nearPD(cor_x2, corr=TRUE)$mat, ncol = nvars)
+          cor_x2 <- (cor_x2 + t(cor_x2)) / 2 # make symmetric
+        }
+        
+        
         r1perm <- EBICglasso(cor(x1perm),nrow(x1perm),gamma=gamma)
         r2perm <- EBICglasso(cor(x2perm),nrow(x2perm),gamma=gamma)
         if(weighted==FALSE){
@@ -145,7 +201,9 @@ NCT <- function(data1, data2, gamma, it = 100, binary.data=FALSE, paired=FALSE, 
                   edges.tested = edges.tested,
                   einv.real = einv.real,
                   einv.pvals = einv.pvals,
-                  einv.perm = einv.perm)
+                  einv.perm = einv.perm, 
+                  nw1 = nw1,
+                  nw2 = nw2)
     }
     
     if (progressbar==TRUE) close(pb)
@@ -159,7 +217,9 @@ NCT <- function(data1, data2, gamma, it = 100, binary.data=FALSE, paired=FALSE, 
         glstrinv.perm = glstrinv.perm,
         nwinv.real = nwinv.real,
         nwinv.pval = sum(nwinv.perm >= nwinv.real)/it,
-        nwinv.perm = nwinv.perm
+        nwinv.perm = nwinv.perm, 
+        nw1 = nw1,
+        nw2 = nw2
       )
     }
     
