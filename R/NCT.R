@@ -39,8 +39,6 @@ NCT <- function(data1,
   corrpvals.all <- matrix(NA,nvars,nvars)
   edges.pvalmattemp <- matrix(0,nvars,nvars)
   
-  permute <- function()
-  
   #####################################
   ### procedure for non-binary data ###
   #####################################
