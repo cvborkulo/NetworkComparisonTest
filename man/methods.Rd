@@ -29,7 +29,7 @@ defines what has to be plotted: results pertaining to test on invariance of netw
 }
 
 \author{
-Claudia D. van Borkulo, with contributions from Sacha Epskamp and Alex Millner
+Claudia D. van Borkulo, with contributions from Jonas Haslbeck, Sacha Epskamp and Alex Millner
 
 Maintainer: Claudia D. van Borkulo <cvborkulo@gmail.com>
 }

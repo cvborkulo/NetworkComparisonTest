@@ -10,7 +10,9 @@ NCT <- function(data1,
                 test.edges=FALSE, 
                 edges, 
                 progressbar=TRUE,
-                make.positive.definite=TRUE){ 
+                make.positive.definite=TRUE,
+                p.adjust.methods="none"
+){ 
   
   if (missing(gamma)){
     if (binary.data){
@@ -33,10 +35,11 @@ NCT <- function(data1,
   
   glstrinv.perm <- glstrinv.real <- nwinv.real <- nwinv.perm <- c()
   diffedges.perm <- matrix(0,it,nedges) 
-  diffedges.permtemp <- matrix(0, nvars, nvars)
   einv.perm.all <- array(NA,dim=c(nvars, nvars, it))
-  edges.pval.HBall <- matrix(NA,nvars,nvars)
+  corrpvals.all <- matrix(NA,nvars,nvars)
   edges.pvalmattemp <- matrix(0,nvars,nvars)
+  
+  permute <- function()
   
   #####################################
   ### procedure for non-binary data ###
@@ -47,10 +50,8 @@ NCT <- function(data1,
     
     cor_x1 <- cor(x1)
     cor_x2 <- cor(x2)
-
+    
     if(make.positive.definite){
-      # cor_x1 <- make.positive.definite(cor_x1)
-      # cor_x2 <- make.positive.definite(cor_x2)
       cor_x1 <- matrix(nearPD(cor_x1, corr=TRUE)$mat, ncol = nvars)
       cor_x1 <- (cor_x1 + t(cor_x1)) / 2 # make symmetric
       cor_x2 <- matrix(nearPD(cor_x2, corr=TRUE)$mat, ncol = nvars)
@@ -80,9 +81,14 @@ NCT <- function(data1,
     nwinv.real <- max(diffedges.real)
     
     
-    ## permuted data
+    #####################################
+    #####     Start permutations    #####
+    #####################################
     for (i in 1:it)
     {
+      diffedges.permtemp <- matrix(0, nvars, nvars)
+      
+      # If not paired data
       if(paired==FALSE)
       {
         s <- sample(1:(nobs1+nobs2),nobs1,replace=FALSE)
@@ -101,8 +107,6 @@ NCT <- function(data1,
           cor_x2 <- (cor_x2 + t(cor_x2)) / 2 # make symmetric
         }
         
-        
-        
         r1perm <- EBICglasso(cor_x1,nrow(x1perm),gamma=gamma)
         r2perm <- EBICglasso(cor_x2,nrow(x2perm),gamma=gamma)
         if(weighted==FALSE){
@@ -111,8 +115,7 @@ NCT <- function(data1,
         }
       }
       
-      
-      
+      # If paired data
       if(paired==TRUE)
       {
         s <- sample(c(1,2),nobs1,replace=TRUE)
@@ -125,14 +128,11 @@ NCT <- function(data1,
         cor_x2 <- cor(x2perm)
         
         if(make.positive.definite){
-          # cor_x1 <- make.positive.definite(cor_x1)
-          # cor_x2 <- make.positive.definite(cor_x2)
           cor_x1 <- matrix(nearPD(cor_x1, corr=TRUE)$mat, ncol = nvars)
           cor_x1 <- (cor_x1 + t(cor_x1)) / 2 # make symmetric
           cor_x2 <- matrix(nearPD(cor_x2, corr=TRUE)$mat, ncol = nvars)
           cor_x2 <- (cor_x2 + t(cor_x2)) / 2 # make symmetric
         }
-        
         
         r1perm <- EBICglasso(cor(x1perm),nrow(x1perm),gamma=gamma)
         r2perm <- EBICglasso(cor(x2perm),nrow(x2perm),gamma=gamma)
@@ -152,41 +152,59 @@ NCT <- function(data1,
       
       if (progressbar==TRUE) setTxtProgressBar(pb, i)
     }
+    #####################################
+    #####      End permutations     #####
+    #####################################
     
+    
+    #####################################
+    #####     Calculate p-values    #####
+    #####################################
     if(test.edges==TRUE)
     {
       # vector with uncorrected p values
       edges.pvaltemp <- colSums(diffedges.perm >= diffedges.realmat)/it 
-      # matrix with uncorrected p values
-      edges.pvalmattemp[upper.tri(edges.pvalmattemp,diag=FALSE)] <- edges.pvaltemp
-      edges.pvalmattemp <- edges.pvalmattemp + t(edges.pvalmattemp)
       
+      ## If all edges should be tested
       if(is.character(edges))
       {
-        ept.HBall <- p.adjust(edges.pvaltemp, method='holm')
+        # corrected p-values (or not if p.adjust.methods='none')
+        corrpvals.all.temp <- round(p.adjust(edges.pvaltemp, method=p.adjust.methods),3)
         # matrix with corrected p values
-        edges.pval.HBall[upper.tri(edges.pval.HBall,diag=FALSE)] <- ept.HBall 
-        rownames(edges.pval.HBall) <- colnames(edges.pval.HBall) <- colnames(data1)
-        einv.pvals <- melt(edges.pval.HBall, na.rm=TRUE, value.name = 'p-value')
+        corrpvals.all
+        corrpvals.all[upper.tri(corrpvals.all,diag=FALSE)] <- corrpvals.all.temp 
+        rownames(corrpvals.all) <- colnames(corrpvals.all) <- colnames(x1)
+        einv.pvals <- melt(corrpvals.all, na.rm=TRUE, value.name = 'p-value')
         einv.perm <- einv.perm.all
         einv.real <- diffedges.realoutput
       }
       
+      ## If a selection of edges should be tested
       if(is.list(edges))
       {
         einv.perm <- matrix(NA,it,length(edges))
         colnames(einv.perm) <- edges
-        uncorrpvals <- einv.real <- c()
+        uncorrpvals <- einv.real <- pairs <- c()
+        
+        # matrix with uncorrected p values
+        edges.pvalmattemp[upper.tri(edges.pvalmattemp,diag=FALSE)] <- edges.pvaltemp
+        edges.pvalmattemp <- edges.pvalmattemp + t(edges.pvalmattemp)
+        
         for(j in 1:length(edges))
         {
+          pairs <- rbind(pairs, c(colnames(x1)[edges[[j]][1]], colnames(x1)[edges[[j]][2]]))
           uncorrpvals[j] <- edges.pvalmattemp[edges[[j]][1],edges[[j]][2]]
           einv.real[j] <- diffedges.realoutput[edges[[j]][1],edges[[j]][2]]
           for(l in 1:it){
             einv.perm[l,j] <- einv.perm.all[,,l][edges[[j]][1],edges[[j]][2]]
           }
         }
-        HBcorrpvals <- p.adjust(uncorrpvals, method='holm')
-        einv.pvals <- HBcorrpvals
+        corrpvals <- p.adjust(uncorrpvals, method=p.adjust.methods)
+        corrpvals_mat <- matrix(NA,length(edges),3)
+        corrpvals_mat[,3] <- corrpvals
+        corrpvals_mat[,1:2] <- pairs
+        einv.pvals <- as.data.frame(corrpvals_mat)
+        colnames(einv.pvals) <- c('Var1', 'Var2', 'p-value')
       }
       
       edges.tested <- colnames(einv.perm)
@@ -255,9 +273,12 @@ NCT <- function(data1,
     ## Network structure invariance
     nwinv.real <- max(diffedges.real)
     
-    ## permuted data
+    #####################################
+    #####     Start permutations    #####
+    #####################################
     for (i in 1:it)
     {
+      diffedges.permtemp <- matrix(0, nvars, nvars)
       if(paired==FALSE)
       {
         # a check to prevent an error of lognet(): a variable with only one 0 or 1 is not allowed
@@ -318,47 +339,64 @@ NCT <- function(data1,
       
       if (progressbar==TRUE) setTxtProgressBar(pb, i)
     }
+    #####################################
+    #####      End permutations     #####
+    #####################################
     
+    
+    #####################################
+    #####     Calculate p-values    #####
+    #####################################
     if(test.edges==TRUE)
     {
       # vector with uncorrected p values
       edges.pvaltemp <- colSums(diffedges.perm >= diffedges.realmat)/it 
-      # matrix with uncorrected p values
+      # # matrix with uncorrected p values
       edges.pvalmattemp[upper.tri(edges.pvalmattemp,diag=FALSE)] <- edges.pvaltemp
       edges.pvalmattemp <- edges.pvalmattemp + t(edges.pvalmattemp)
       
+      ## If all edges should be tested
       if(is.character(edges))
       {
-        ept.HBall <- p.adjust(edges.pvaltemp, method='holm')
+        # corrected p-values (or not if p.adjust.methods='none')
+        corrpvals.all.temp <- round(p.adjust(edges.pvaltemp, method=p.adjust.methods),3)
         # matrix with corrected p values
-        edges.pval.HBall[upper.tri(edges.pval.HBall,diag=FALSE)] <- ept.HBall 
-        rownames(edges.pval.HBall) <- colnames(edges.pval.HBall) <- colnames(data1)
-        einv.pvals <- melt(edges.pval.HBall, na.rm=TRUE, value.name = 'p-value')
+        corrpvals.all[upper.tri(corrpvals.all,diag=FALSE)] <- corrpvals.all.temp 
+        rownames(corrpvals.all) <- colnames(corrpvals.all) <- colnames(x1)
+        einv.pvals <- melt(corrpvals.all, na.rm=TRUE, value.name = 'p-value')
         einv.perm <- einv.perm.all
         einv.real <- diffedges.realoutput
       }
       
-      
+      ## If a selection of edges should be tested
       if(is.list(edges))
       {
         einv.perm <- matrix(NA,it,length(edges))
         colnames(einv.perm) <- edges
-        uncorrpvals <- einv.real <- c()
+        uncorrpvals <- einv.real <- pairs <- c()
         for(j in 1:length(edges))
         {
+          pairs <- rbind(pairs, c(colnames(x1)[edges[[j]][1]], colnames(x1)[edges[[j]][2]]))
           uncorrpvals[j] <- edges.pvalmattemp[edges[[j]][1],edges[[j]][2]]
           einv.real[j] <- diffedges.realoutput[edges[[j]][1],edges[[j]][2]]
           for(l in 1:it){
             einv.perm[l,j] <- einv.perm.all[,,l][edges[[j]][1],edges[[j]][2]]
           }
         }
-        HBcorrpvals <- p.adjust(uncorrpvals, method='holm')
-        einv.pvals <- HBcorrpvals
+        corrpvals <- p.adjust(uncorrpvals, method=p.adjust.methods)
+        corrpvals_mat <- matrix(NA,length(edges),3)
+        corrpvals_mat[,3] <- corrpvals
+        
+        corrpvals_mat[,1:2] <- pairs
+        einv.pvals <- as.data.frame(corrpvals_mat)
+        colnames(einv.pvals) <- c('Var1', 'Var2', 'p-value')
       }
       
       edges.tested <- colnames(einv.perm)
       
-      res <- list(glstrinv.real = glstrinv.real,
+      res <- list(nw1 = nw1,
+                  nw2 = nw2,
+                  glstrinv.real = glstrinv.real,
                   glstrinv.sep = glstrinv.sep,
                   glstrinv.pval = sum(glstrinv.perm >= glstrinv.real)/it, 
                   glstrinv.perm = glstrinv.perm,
@@ -376,14 +414,15 @@ NCT <- function(data1,
     
     if(test.edges==FALSE) 
     {
-      res <- list(
-        glstrinv.real = glstrinv.real, 
-        glstrinv.sep = glstrinv.sep,
-        glstrinv.pval = sum(glstrinv.perm >= glstrinv.real)/it,
-        glstrinv.perm = glstrinv.perm,
-        nwinv.real = nwinv.real,
-        nwinv.pval = sum(nwinv.perm >= nwinv.real)/it,
-        nwinv.perm = nwinv.perm
+      res <- list(nw1 = nw1,
+                  nw2 = nw2,
+                  glstrinv.real = glstrinv.real, 
+                  glstrinv.sep = glstrinv.sep,
+                  glstrinv.pval = sum(glstrinv.perm >= glstrinv.real)/it,
+                  glstrinv.perm = glstrinv.perm,
+                  nwinv.real = nwinv.real,
+                  nwinv.pval = sum(nwinv.perm >= nwinv.real)/it,
+                  nwinv.perm = nwinv.perm
       )
     }
   }
@@ -391,6 +430,7 @@ NCT <- function(data1,
   class(res) <- "NCT"
   return(res)
 }
+
 
 ## Methods:
 
@@ -433,7 +473,7 @@ plot.NCT <- function(x,what = c("strength","network","edge"),...){
     ## Plot results of the maximum difference in edge weights (not reliable with only 10 permutations)
     nedgetests <- ncol(x$einv.perm)
     for(i in 1:nedgetests){
-      hist(x$einv.perm[,i], main=paste('p =',x$einv.pval[i]),xlab=paste('Difference in edge strength ', colnames(x$einv.perm)[i]),xlim=c(0,max(x$einv.real,x$einv.perm)))
+      hist(x$einv.perm[,i], main=paste('p =',x$einv.pval[i,3]),xlab=paste('Difference in edge strength ', colnames(x$einv.perm)[i]),xlim=c(0,max(x$einv.real,x$einv.perm)))
       points(x$einv.real[i],0,col='red',pch=17)
     }
     
