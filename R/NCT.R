@@ -11,7 +11,8 @@ NCT <- function(data1,
                 edges, 
                 progressbar=TRUE,
                 make.positive.definite=TRUE,
-                p.adjust.methods="none"
+                p.adjust.methods="none",
+                model = c("lasso","TMFG")
 ){ 
   
   if (missing(gamma)){
@@ -21,6 +22,12 @@ NCT <- function(data1,
       gamma <- 0.5
     }
   }
+  
+  if(missing(model)){
+    model <- "lasso"
+    } else {
+    model <- match.arg(model)
+    }
   
   if (progressbar==TRUE) pb <- txtProgressBar(max=it, style = 3)
   x1 <- data1
@@ -56,8 +63,16 @@ NCT <- function(data1,
       cor_x2 <- (cor_x2 + t(cor_x2)) / 2 # make symmetric
     }
     
-    nw1 <- EBICglasso(cor_x1,nrow(x1),gamma=gamma)
-    nw2 <- EBICglasso(cor_x2,nrow(x2),gamma=gamma)
+    if(model=="lasso")
+      {
+        nw1 <- EBICglasso(cor_x1,nrow(x1),gamma=gamma)
+        nw2 <- EBICglasso(cor_x2,nrow(x2),gamma=gamma)
+      }else if(model=="TMFG")
+      {
+        nw1 <- NetworkToolbox::TMFG(cor_x1)$A
+        nw2 <- NetworkToolbox::TMFG(cor_x2)$A
+      }
+      
     if(weighted==FALSE){
       nw1=(nw1!=0)*1
       nw2=(nw2!=0)*1
@@ -105,8 +120,16 @@ NCT <- function(data1,
           cor_x2 <- (cor_x2 + t(cor_x2)) / 2 # make symmetric
         }
         
-        r1perm <- EBICglasso(cor_x1,nrow(x1perm),gamma=gamma)
-        r2perm <- EBICglasso(cor_x2,nrow(x2perm),gamma=gamma)
+        if(model=="lasso")
+          {
+            r1perm <- EBICglasso(cor_x1,nrow(x1perm),gamma=gamma)
+            r2perm <- EBICglasso(cor_x2,nrow(x2perm),gamma=gamma)
+          }else if(model=="TMFG")
+          {
+            r1perm <- NetworkToolbox::TMFG(cor_x1)$A
+            r2perm <- NetworkToolbox::TMFG(cor_x2)$A
+          }
+          
         if(weighted==FALSE){
           r1perm=(r1perm!=0)*1
           r2perm=(r2perm!=0)*1
@@ -132,8 +155,16 @@ NCT <- function(data1,
           cor_x2 <- (cor_x2 + t(cor_x2)) / 2 # make symmetric
         }
         
-        r1perm <- EBICglasso(cor(x1perm),nrow(x1perm),gamma=gamma)
-        r2perm <- EBICglasso(cor(x2perm),nrow(x2perm),gamma=gamma)
+        if(model=="lasso")
+          {
+            r1perm <- EBICglasso(cor(x1perm),nrow(x1perm),gamma=gamma)
+            r2perm <- EBICglasso(cor(x2perm),nrow(x2perm),gamma=gamma)
+          }else if(model=="TMFG")
+          {
+            r1perm <- NetworkToolbox::TMFG(x1perm)$A
+            r2perm <- NetworkToolbox::TMFG(x2perm)$A
+          }
+          
         if(weighted==FALSE){
           r1perm=(r1perm!=0)*1
           r2perm=(r2perm!=0)*1
@@ -247,10 +278,18 @@ NCT <- function(data1,
   ## Real data
   if(binary.data==TRUE) 
   {
-    IF1 <- IsingFit(x1, AND = AND, gamma=gamma, plot=FALSE, progressbar=FALSE)
-    IF2 <- IsingFit(x2, AND = AND, gamma=gamma, plot=FALSE, progressbar=FALSE)
-    nw1 <- IF1$weiadj
-    nw2 <- IF2$weiadj
+    if(model=="lasso")
+      {
+        IF1 <- IsingFit(x1, AND = AND, gamma=gamma, plot=FALSE, progressbar=FALSE)
+        IF2 <- IsingFit(x2, AND = AND, gamma=gamma, plot=FALSE, progressbar=FALSE)
+        nw1 <- IF1$weiadj
+        nw2 <- IF2$weiadj
+      }else if(model=="TMFG")
+      {
+        nw1 <- NetworkToolbox::TMFG(x1)$A
+        nw2 <- NetworkToolbox::TMFG(x2)$A
+      }
+      
     if(weighted==FALSE){
       nw1=(nw1!=0)*1
       nw2=(nw2!=0)*1
@@ -290,10 +329,19 @@ NCT <- function(data1,
           cm2 <- colMeans(x2perm)
           checkN=ifelse(any(cm1<(1/nobs1))|any(cm1>(nobs1-1)/nobs1)|any(cm2<(1/nobs2))|any(cm2>(nobs2-1)/nobs2),0,1) 
         }
-        IF1perm <- IsingFit(x1perm,AND = AND, gamma=gamma,plot=FALSE,progressbar=FALSE)
-        IF2perm <- IsingFit(x2perm,AND = AND, gamma=gamma,plot=FALSE,progressbar=FALSE)
-        r1perm <- IF1perm$weiadj
-        r2perm <- IF2perm$weiadj
+        
+        if(model=="lasso")
+          {
+            IF1perm <- IsingFit(x1perm,AND = AND, gamma=gamma,plot=FALSE,progressbar=FALSE)
+            IF2perm <- IsingFit(x2perm,AND = AND, gamma=gamma,plot=FALSE,progressbar=FALSE)
+            r1perm <- IF1perm$weiadj
+            r2perm <- IF2perm$weiadj
+          }else if(model=="TMFG")
+          {
+            r1perm <- NetworkToolbox::TMFG(x1perm)$A
+            r2perm <- NetworkToolbox::TMFG(x2perm)$A
+          }
+
         if(weighted==FALSE){
           r1perm=(r1perm!=0)*1
           r2perm=(r2perm!=0)*1
@@ -316,10 +364,18 @@ NCT <- function(data1,
           checkN=ifelse(any(cm1<(1/nobs1))|any(cm1>(nobs1-1)/nobs1)|any(cm2<(1/nobs2))|any(cm2>(nobs2-1)/nobs2),0,1) 
         }
         
-        IF1perm <- IsingFit(x1perm,AND = AND, gamma=gamma,plot=FALSE,progressbar=FALSE)
-        IF2perm <- IsingFit(x2perm,AND = AND, gamma=gamma,plot=FALSE,progressbar=FALSE)
-        r1perm <- IF1perm$weiadj
-        r2perm <- IF2perm$weiadj
+        if(model=="lasso")
+          {
+            IF1perm <- IsingFit(x1perm,AND = AND, gamma=gamma,plot=FALSE,progressbar=FALSE)
+            IF2perm <- IsingFit(x2perm,AND = AND, gamma=gamma,plot=FALSE,progressbar=FALSE)
+            r1perm <- IF1perm$weiadj
+            r2perm <- IF2perm$weiadj
+          }else if(model=="TMFG")
+          {
+            r1perm <- NetworkToolbox::TMFG(x1perm)$A
+            r2perm <- NetworkToolbox::TMFG(x2perm)$A
+          }
+        
         if(weighted==FALSE)
         {
           r1perm=(r1perm!=0)*1
