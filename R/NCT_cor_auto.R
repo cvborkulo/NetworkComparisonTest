@@ -117,8 +117,8 @@ NCT_cor_auto <- function(data1,
             r2perm <- EBICglasso(cor_x2, nrow(x2perm),gamma=gamma)
           }else if(model=="TMFG")
           {
-            r1perm <- NetworkToolbox(cor_x1)$A
-            r2perm <- NetworkToolbox(cor_x2)$A
+            r1perm <- NetworkToolbox::TMFG(cor_x1)$A
+            r2perm <- NetworkToolbox::TMFG(cor_x2)$A
           }
           
         if(weighted==FALSE){
