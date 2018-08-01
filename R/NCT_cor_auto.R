@@ -8,7 +8,8 @@ NCT_cor_auto <- function(data1,
                          edges, 
                          progressbar=TRUE,
                          make.positive.definite=TRUE,
-                         p.adjust.methods="none"
+                         p.adjust.methods="none",
+                         model = c("lasso","TMFG")
 ){ 
   
   #### June 13 2017
@@ -16,6 +17,12 @@ NCT_cor_auto <- function(data1,
   #### When treating the data as ordinal, you assume that the data comes from a normal distribution and is thresholded into ordinal categories. When using that in NCT, you make the additional assumption that the thresholding is similar in both groups. It is the question whether this is a plausible assumption. If you do not want to assume this, you might want to treat the data as normal in the ordinary NCT. 
   
   if (missing(gamma)) gamma <- 0.5
+  
+  if(missing(model)){
+      model <- "lasso"
+    } else {
+      model <- match.arg(model)
+    }
 
   if (progressbar==TRUE) pb <- txtProgressBar(max=it, style = 3)
   x1 <- data1
@@ -49,8 +56,16 @@ NCT_cor_auto <- function(data1,
       cor_x2 <- (cor_x2 + t(cor_x2)) / 2 # make symmetric
     }
     
-    nw1 <- EBICglasso(cor_x1, nrow(x1),gamma=gamma)
-    nw2 <- EBICglasso(cor_x2, nrow(x2),gamma=gamma)
+  if(model=="lasso")
+    {
+      nw1 <- EBICglasso(cor_x1, nrow(x1),gamma=gamma)
+      nw2 <- EBICglasso(cor_x2, nrow(x2),gamma=gamma)
+    }else if(model=="TMFG")
+    {
+      nw1 <- NetworkToolbox::TMFG(cor_x1)$A
+      nw2 <- NetworkToolbox::TMFG(cor_x2)$A
+    }
+    
     if(weighted==FALSE){
       nw1=(nw1!=0)*1
       nw2=(nw2!=0)*1
@@ -95,8 +110,17 @@ NCT_cor_auto <- function(data1,
           cor_x2 <- matrix(nearPD(cor_x2, corr=TRUE)$mat, ncol = nvars)
           cor_x2 <- (cor_x2 + t(cor_x2)) / 2 # make symmetric
         }
-        r1perm <- EBICglasso(cor_x1, nrow(x1perm),gamma=gamma)
-        r2perm <- EBICglasso(cor_x2, nrow(x2perm),gamma=gamma)
+        
+        if(model=="lasso")
+          {
+            r1perm <- EBICglasso(cor_x1, nrow(x1perm),gamma=gamma)
+            r2perm <- EBICglasso(cor_x2, nrow(x2perm),gamma=gamma)
+          }else if(model=="TMFG")
+          {
+            r1perm <- NetworkToolbox(cor_x1)$A
+            r2perm <- NetworkToolbox(cor_x2)$A
+          }
+          
         if(weighted==FALSE){
           r1perm=(r1perm!=0)*1
           r2perm=(r2perm!=0)*1
@@ -122,8 +146,16 @@ NCT_cor_auto <- function(data1,
           cor_x2 <- (cor_x2 + t(cor_x2)) / 2 # make symmetric
         }
         
-        r1perm <- EBICglasso(cor_x1,nrow(x1perm),gamma=gamma)
-        r2perm <- EBICglasso(cor_x2,nrow(x2perm),gamma=gamma)
+        if(model=="lasso")
+          {
+            r1perm <- EBICglasso(cor_x1,nrow(x1perm),gamma=gamma)
+            r2perm <- EBICglasso(cor_x2,nrow(x2perm),gamma=gamma)
+          }else if(model=="TMFG")
+          {
+            r1perm <- NetworkToolbox::TMFG(cor_x1)$A
+            r2perm <- NetworkToolbox::TMFG(cor_x2)$A
+          }
+          
         if(weighted==FALSE){
           r1perm=(r1perm!=0)*1
           r2perm=(r2perm!=0)*1
