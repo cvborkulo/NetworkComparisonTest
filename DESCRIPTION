@@ -13,7 +13,8 @@ Imports:
     stats,
     graphics,
     utils,
-    Matrix
+    Matrix,
+    NetworkToolbox
 Description: This permutation based hypothesis test, suited for Gaussian and
     binary data, assesses the difference between two networks based on several
     invariance measures (network structure invariance, global strength invariance,
