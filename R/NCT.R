@@ -1,27 +1,34 @@
-NCT <- function(data1, data2, it = 100, 
-                          default=c("association", "concentration", "EBICglasso", "IsingFit", "custom"), 
-                          paired=FALSE, weighted=TRUE, progressbar=TRUE, test.edges=FALSE, edges,
-                          custom_func, AND=TRUE, global=c("ExpectedInfluence", "Strength"),test.centralities=FALSE,
-                          centralities=c("ExpectedInfluence", "Strength", "Betweenness", "Closeness"), nodes,
-                          adjust=c("holm","fdr","BY", "none")){
+NCT <- function(data1, 
+                data2, 
+                it = 100, 
+                estimation_method=c("association", "concentration", "EBICglasso", "IsingFit", "custom"), 
+                paired=FALSE, 
+                weighted=TRUE, 
+                progressbar=TRUE, 
+                test_edges=FALSE, 
+                edges,
+                nodes,
+                custom_estimation_function, 
+                centrality_global=c("ExpectedInfluence", "Strength"),
+                test_centrality_node=FALSE,
+                centrality_node=c("ExpectedInfluence", "Strength", "Betweenness", "Closeness"), 
+                p_adjust_methods=c("none", "holm","fdr","BY")){
   
-  global <- match.arg(global)
-  gl.str <- switch(global,
+  centrality_global <- match.arg(centrality_global)
+  centrality_node <- match.arg(centrality_node)
+  gl.str <- switch(centrality_global,
                    Strength = function(x){
                      return(abs(sum(abs(x[upper.tri(x)]))))
                    } ,
                    ExpectedInfluence = function(x){
                      return(sum(x[upper.tri(x)]))
                    } )
-  #if(match.arg(global.strength) == "aboslute_value"){
-   # gl.str <- function(x){
-    #  return(abs(sum(abs(x[upper.tri(x)]))))
-  #  } 
-  #} else if (match.arg(global.strength) == "raw") {
-   # gl.str <- function(x){
-    #  return(sum(x[upper.tri(x)]))
-    #} 
-  #}
+  if(!is.null(colnames(data1))){
+    nodenames <- colnames(data1)
+  } else{
+    nodenames <- 1:(dim(data1)[2])
+  }
+  
   
   ## From boot
   x1 <- data.frame(data1)
@@ -46,7 +53,7 @@ NCT <- function(data1, data2, it = 100,
   } else {
     nnodes <- length(nodes)
   } 
-  diffcen.perm <- matrix(0, it, nnodes*length(centralities))
+  diffcen.perm <- matrix(0, it, nnodes*length(centrality_node))
   
   ## From original
   if (progressbar == TRUE) 
@@ -71,22 +78,22 @@ NCT <- function(data1, data2, it = 100,
 
   
   ##### Determine which function to use ####
-  if(match.arg(default)=="association"){
+  if(match.arg(estimation_method)=="association"){
     fun <- cor
-  } else if(match.arg(default)=="concentration"){
+  } else if(match.arg(estimation_method)=="concentration"){
     fun <- function(x){
       ppcor::pcor(x)$estimate
     }
-  } else if(match.arg(default)=="EBICglasso"){
+  } else if(match.arg(estimation_method)=="EBICglasso"){
     fun <- function(x){
       return(qgraph::EBICglasso(cor(x), n=dim(x)[1]))
     }
-  } else if(match.arg(default)=="IsingFit"){
+  } else if(match.arg(estimation_method)=="IsingFit"){
     fun <- function(x){
-      return(IsingFit::IsingFit(x, AND=AND, progressbar=FALSE, plot=F)$weiadj)
+      return(IsingFit::IsingFit(x, progressbar=FALSE, plot=F)$weiadj)
     }
-  } else if(match.arg(default)=="custom"){
-    fun <- custom_func
+  } else if(match.arg(estimation_method)=="custom"){
+    fun <- custom_estimation_function
   }
   
   
@@ -107,12 +114,12 @@ NCT <- function(data1, data2, it = 100,
                                 byrow = TRUE)
     diffedges.realoutput <- abs(nw1 - nw2)
     nwinv.real <- max(diffedges.real)
-    if(test.centralities==TRUE){
+    if(test_centrality_node==TRUE){
       cen1 <- centrality_auto(nw1)$node.centrality
       cen2 <- centrality_auto(nw2)$node.centrality
       cen1$ExpectedInfluence <- networktools::expectedInf(nw1)$step1
       cen2$ExpectedInfluence <- networktools::expectedInf(nw2)$step1
-      diffcen.real <- abs(as.matrix(cen1) - as.matrix(cen2))
+      diffcen.real <- as.matrix(cen1) - as.matrix(cen2)
     }
     for (i in 1:it) {
       if (paired == FALSE) {
@@ -147,37 +154,46 @@ NCT <- function(data1, data2, it = 100,
       diffedges.permtemp <- diffedges.permtemp + t(diffedges.permtemp)
       einv.perm.all[, , i] <- diffedges.permtemp
       nwinv.perm[i] <- max(diffedges.perm[i, ])
-      if(test.centralities==TRUE){
+      if(test_centrality_node==TRUE){
         cen1permtemp <- centrality_auto(r1perm)$node.centrality
         cen2permtemp <- centrality_auto(r2perm)$node.centrality
         cen1permtemp$ExpectedInfluence <- networktools::expectedInf(r1perm)$step1
         cen2permtemp$ExpectedInfluence <- networktools::expectedInf(r2perm)$step1
-        diffcen.permtemp <- abs(as.matrix(cen1permtemp) - as.matrix(cen2permtemp))
+        diffcen.permtemp <- as.matrix(cen1permtemp) - as.matrix(cen2permtemp)
         if(nodes=="all"){
-          diffcen.perm[i,] <- melt(diffcen.permtemp[,centralities])$value
+          diffcen.perm[i,] <- melt(diffcen.permtemp[,centrality_node])$value
         } else {
-          diffcen.perm[i,] <- melt(diffcen.permtemp[nodes,centralities])$value
+          diffcen.perm[i,] <- melt(diffcen.permtemp[nodes,centrality_node])$value
         } 
       }
       if (progressbar == TRUE) 
         setTxtProgressBar(pb, i)
     }
-    if (test.edges == TRUE) {
+    
+    ## This section needs work. Should merge with Claudia's version to see if this fixes things.
+    if (test_edges == TRUE) {
+      if(missing(edges)){
+        edges <- "all"
+      }
       edges.pvaltemp <- colSums(diffedges.perm >= diffedges.realmat)/it
       edges.pvalmattemp[upper.tri(edges.pvalmattemp, diag = FALSE)] <- edges.pvaltemp
       edges.pvalmattemp <- edges.pvalmattemp + t(edges.pvalmattemp)
+      rownames(edges.pvalmattemp) <- colnames(edges.pvalmattemp) <- nodenames
+      rownames(diffedges.realoutput) <- colnames(diffedges.realoutput) <- nodenames
+      rownames(einv.perm.all) <- colnames(einv.perm.all) <- nodenames
+      ## is.character -- just testing to see if it is equal to "all"
       if (is.character(edges)) {
-        if(match.arg(adjust)=="none"){
+        if(match.arg(p_adjust_methods)=="none"){
           ept.HBall <- edges.pvaltemp
-        } else {ept.HBall <- p.adjust(edges.pvaltemp, method = martch.arg(adjust))}
+        } else {ept.HBall <- p.adjust(edges.pvaltemp, method = match.arg(p_adjust_methods))}
         edges.pval.HBall[upper.tri(edges.pval.HBall, 
                                    diag = FALSE)] <- ept.HBall
-        rownames(edges.pval.HBall) <- colnames(edges.pval.HBall) <- colnames(data1)
         einv.pvals <- melt(edges.pval.HBall, na.rm = TRUE, 
                            value.name = "p-value")
         einv.perm <- einv.perm.all
         einv.real <- diffedges.realoutput
       }
+      ## this is where things get wonky. Giving me strange results
       if (is.list(edges)) {
         einv.perm <- matrix(NA, it, length(edges))
         colnames(einv.perm) <- edges
@@ -192,28 +208,30 @@ NCT <- function(data1, data2, it = 100,
                                                     edges[[j]][2]]
           }
         }
-        if(match.arg(adjust)=="none"){
+        if(match.arg(p_adjust_methods)=="none"){
           HBcorrpvals <- uncorrpvals
-        } else {HBcorrpvals <- p.adjust(uncorrpvals, method = match.arg(adjust))}
+        } else {HBcorrpvals <- p.adjust(uncorrpvals, method = match.arg(p_adjust_methods))}
         einv.pvals <- HBcorrpvals
       }
       edges.tested <- colnames(einv.perm)
 
     }
-    if(test.centralities==TRUE){
+    if(test_centrality_node==TRUE){
       if(nodes=="all"){
-        diffcen.real.vec <- melt(diffcen.real[,centralities])$value
+        diffcen.real.vec <- melt(diffcen.real[,centrality_node])$value
         nnodes <- nvars
       } else {
-        diffcen.real.vec <- melt(diffcen.real[nodes,centralities])$value
+        diffcen.real.vec <- melt(diffcen.real[nodes,centrality_node])$value
         nnodes <- length(nodes)
       } 
-      diffcen.pvaltemp <- colSums(diffcen.perm >= diffcen.real.vec)/it
-      if(match.arg(adjust)=="none"){
+      diffcen.realmat <- matrix(diffcen.real.vec, it, nnodes, 
+                                  byrow = TRUE)
+      diffcen.pvaltemp <- colSums(abs(diffcen.perm) >= abs(diffcen.realmat))/it
+      if(match.arg(p_adjust_methods)=="none"){
         diffcen.HBall <- diffcen.pvaltemp
-      } else {diffcen.HBall <- p.adjust(diffcen.pvaltemp, method = match.arg(adjust))}
-      diffcen.pval <- matrix(diffcen.HBall, nnodes, length(centralities))
-      colnames(diffcen.pval) <- centralities
+      } else {diffcen.HBall <- p.adjust(diffcen.pvaltemp, method = match.arg(p_adjust_methods))}
+      diffcen.pval <- matrix(diffcen.HBall, nnodes, length(centrality_node))
+      colnames(diffcen.pval) <- centrality_node
       if(nodes=="all"){
         rownames(diffcen.pval) <- rownames(diffcen.real)
       } else {rownames(diffcen.pval) <- nodes}
@@ -224,16 +242,17 @@ NCT <- function(data1, data2, it = 100,
                   glstrinv.pval = sum(abs(glstrinv.perm) >= abs(glstrinv.real))/it, 
                   glstrinv.perm = glstrinv.perm, nwinv.real = nwinv.real, 
                   nwinv.pval = sum(nwinv.perm >= nwinv.real)/it, 
-                  nwinv.perm = nwinv.perm, method="permute", global=match.arg(global),
-                  default=match.arg(default))
-    if(test.edges == TRUE){
+                  nwinv.perm = nwinv.perm, method="permute", centrality_global=match.arg(centrality_global),
+                  estimation_method=match.arg(estimation_method))
+    if(test_edges == TRUE){
       res[["edges.tested"]] <- edges.tested
       res[["einv.real"]] <- einv.real
       res[["einv.pvals"]] <- einv.pvals
       res[["einv.perm"]] <- einv.perm
     }
-    if(test.centralities==TRUE){
-      res[["diffcen.real"]] <- diffcen.real
+    if(test_centrality_node==TRUE){
+      res[["diffcen.real"]] <- matrix(diffcen.real.vec, nrow=nnodes,ncol=1, 
+                                      dimnames=list(rownames(diffcen.pval), match.arg(centrality_node)))
       res[["diffcen.perm"]] <- diffcen.perm
       res[["diffcen.pval"]] <- diffcen.pval
     }
