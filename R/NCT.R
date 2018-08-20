@@ -14,23 +14,10 @@ NCT <- function(data1,
                 centrality_node=c("ExpectedInfluence", "Strength", "Betweenness", "Closeness"), 
                 p_adjust_methods=c("none", "holm","fdr","BY")){
   
-  centrality_global <- match.arg(centrality_global)
-  centrality_node <- match.arg(centrality_node)
-  gl.str <- switch(centrality_global,
-                   Strength = function(x){
-                     return(abs(sum(abs(x[upper.tri(x)]))))
-                   } ,
-                   ExpectedInfluence = function(x){
-                     return(sum(x[upper.tri(x)]))
-                   } )
-  if(!is.null(colnames(data1))){
-    nodenames <- colnames(data1)
-  } else{
-    nodenames <- 1:(dim(data1)[2])
-  }
-  
-  
-  ## From boot
+  if (progressbar == TRUE) 
+    pb <- txtProgressBar(max = it, style = 3)
+ 
+  ## Set up data structures
   x1 <- data.frame(data1)
   x2 <- data.frame(data2)
   nobs1 <- nrow(x1)
@@ -40,44 +27,42 @@ NCT <- function(data1,
   b <- 1:(nobs1+nobs2)
   nvars <- ncol(x1)
   nedges <- nvars*(nvars-1)/2
+  glstrinv.perm <- glstrinv.real <- nwinv.real <- nwinv.perm <- c()
+  diffedges.perm <- matrix(0, it, nedges)
+  diffedges.permtemp <- matrix(0, nvars, nvars)
+  einv.perm.all <- array(0, dim = c(nvars, nvars, it))
+  edges.pval.HBall <- matrix(0, nvars, nvars)
+  edges.pvalmattemp <- matrix(0, nvars, nvars)
+  cen.pvalmattemp <- matrix(0, nvars, 4)
+  
+  if(!is.null(colnames(data1))){
+    nodenames <- colnames(data1)
+  } else{
+    nodenames <- 1:(dim(data1)[2])
+  }
   
   ## Centrality
   if(missing(nodes)){
     nodes <- "all"
   }
-  if(is.list(nodes)){
-    nodes<- unlist(nodes)
-  }
   if(nodes=="all"){
     nnodes <- nvars
   } else {
+    nodes<- unlist(nodes)
     nnodes <- length(nodes)
   } 
-  diffcen.perm <- matrix(0, it, nnodes*length(centrality_node))
-  
-  ## From original
-  if (progressbar == TRUE) 
-    pb <- txtProgressBar(max = it, style = 3)
-  x1 <- data1
-  x2 <- data2
-  nobs1 <- nrow(x1)
-  nobs2 <- nrow(x2)
-  dataall <- rbind(x1, x2)
-  data.list <- list(x1, x2)
-  b <- 1:(nobs1 + nobs2)
-  nvars <- ncol(x1)
-  nedges <- nvars * (nvars - 1)/2
-  glstrinv.perm <- glstrinv.real <- nwinv.real <- nwinv.perm <- c()
-  diffedges.perm <- matrix(0, it, nedges)
-  diffedges.permtemp <- matrix(0, nvars, nvars)
-  einv.perm.all <- array(NA, dim = c(nvars, nvars, it))
-  edges.pval.HBall <- matrix(NA, nvars, nvars)
-  edges.pvalmattemp <- matrix(0, nvars, nvars)
-  cen.pvalmattemp <- matrix(0, nvars, 4)
-  
+  centrality_global <- match.arg(centrality_global)
+  centrality_node <- match.arg(centrality_node)
+  gl.str <- switch(centrality_global,
+                   Strength = function(x){
+                     return(abs(sum(abs(x[upper.tri(x)]))))
+                   } ,
+                   ExpectedInfluence = function(x){
+                     return(sum(x[upper.tri(x)]))
+                   } )
+  diffcen.perm <- matrix(NA, it, nnodes*length(centrality_node))
 
-  
-  ##### Determine which function to use ####
+  ## Determine which function to use 
   if(match.arg(estimation_method)=="association"){
     fun <- cor
   } else if(match.arg(estimation_method)=="concentration"){
@@ -96,9 +81,7 @@ NCT <- function(data1,
     fun <- custom_estimation_function
   }
   
-  
-  ##### Run the permutation #####
-
+  ## Run the permutation
     nw1 <- fun(x1)
     nw2 <- fun(x2)
     if (weighted == FALSE) {
@@ -149,8 +132,8 @@ NCT <- function(data1,
       glstrinv.perm[i] <- gl.str(r1perm) - gl.str(r2perm) 
       diffedges.perm[i, ] <- abs(r1perm - r2perm)[upper.tri(abs(r1perm - 
                                                                   r2perm))]
-      diffedges.permtemp[upper.tri(diffedges.permtemp, 
-                                   diag = FALSE)] <- diffedges.perm[i, ]
+      diffedges.permtemp <- matrix(0, nvars, nvars)
+      diffedges.permtemp[upper.tri(diffedges.permtemp, diag = FALSE)] <- diffedges.perm[i, ]
       diffedges.permtemp <- diffedges.permtemp + t(diffedges.permtemp)
       einv.perm.all[, , i] <- diffedges.permtemp
       nwinv.perm[i] <- max(diffedges.perm[i, ])
@@ -170,7 +153,6 @@ NCT <- function(data1,
         setTxtProgressBar(pb, i)
     }
     
-    ## This section needs work. Should merge with Claudia's version to see if this fixes things.
     if (test_edges == TRUE) {
       if(missing(edges)){
         edges <- "all"
@@ -181,23 +163,24 @@ NCT <- function(data1,
       rownames(edges.pvalmattemp) <- colnames(edges.pvalmattemp) <- nodenames
       rownames(diffedges.realoutput) <- colnames(diffedges.realoutput) <- nodenames
       rownames(einv.perm.all) <- colnames(einv.perm.all) <- nodenames
-      ## is.character -- just testing to see if it is equal to "all"
+      ## is.character - purpose is to check if edges == "all"
       if (is.character(edges)) {
         if(match.arg(p_adjust_methods)=="none"){
           ept.HBall <- edges.pvaltemp
         } else {ept.HBall <- p.adjust(edges.pvaltemp, method = match.arg(p_adjust_methods))}
         edges.pval.HBall[upper.tri(edges.pval.HBall, 
                                    diag = FALSE)] <- ept.HBall
+        colnames(edges.pval.HBall) <- rownames(edges.pval.HBall) <- nodenames
         einv.pvals <- melt(edges.pval.HBall, na.rm = TRUE, 
                            value.name = "p-value")
         einv.perm <- einv.perm.all
         einv.real <- diffedges.realoutput
+        edges.tested <- "all"
       }
-      ## this is where things get wonky. Giving me strange results
       if (is.list(edges)) {
         einv.perm <- matrix(NA, it, length(edges))
         colnames(einv.perm) <- edges
-        uncorrpvals <- einv.real <- c()
+        uncorrpvals <- einv.real <- vector()
         for (j in 1:length(edges)) {
           uncorrpvals[j] <- edges.pvalmattemp[edges[[j]][1], 
                                               edges[[j]][2]]
@@ -212,8 +195,8 @@ NCT <- function(data1,
           HBcorrpvals <- uncorrpvals
         } else {HBcorrpvals <- p.adjust(uncorrpvals, method = match.arg(p_adjust_methods))}
         einv.pvals <- HBcorrpvals
+        edges.tested <- colnames(einv.perm)
       }
-      edges.tested <- colnames(einv.perm)
 
     }
     if(test_centrality_node==TRUE){
