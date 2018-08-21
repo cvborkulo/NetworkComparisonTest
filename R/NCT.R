@@ -1,14 +1,14 @@
 NCT <- function(data1, 
                 data2, 
-                it = 100, 
-                estimation_method=c("association", "concentration", "EBICglasso", "IsingFit", "custom"), 
+                it = 500, 
+                estimation_method=c("EBICglasso", "association", "concentration", "IsingFit", "custom"), 
                 paired=FALSE, 
                 weighted=TRUE, 
                 progressbar=TRUE, 
                 test_edges=FALSE, 
                 edges,
                 nodes,
-                custom_estimation_function, 
+                custom_estimation_method, 
                 centrality_global=c("ExpectedInfluence", "Strength"),
                 test_centrality_node=FALSE,
                 centrality_node=c("ExpectedInfluence", "Strength", "Betweenness", "Closeness"), 
@@ -78,7 +78,7 @@ NCT <- function(data1,
       return(IsingFit::IsingFit(x, progressbar=FALSE, plot=F)$weiadj)
     }
   } else if(match.arg(estimation_method)=="custom"){
-    fun <- custom_estimation_function
+    fun <- custom_estimation_method
   }
   
   ## Run the permutation
@@ -165,9 +165,9 @@ NCT <- function(data1,
       rownames(einv.perm.all) <- colnames(einv.perm.all) <- nodenames
       ## is.character - purpose is to check if edges == "all"
       if (is.character(edges)) {
-        if(match.arg(p_adjust_methods)=="none"){
+        if(p_adjust_methods[1]=="none"){
           ept.HBall <- edges.pvaltemp
-        } else {ept.HBall <- p.adjust(edges.pvaltemp, method = match.arg(p_adjust_methods))}
+        } else {ept.HBall <- p.adjust(edges.pvaltemp, method = p_adjust_methods[1])}
         edges.pval.HBall[upper.tri(edges.pval.HBall, 
                                    diag = FALSE)] <- ept.HBall
         colnames(edges.pval.HBall) <- rownames(edges.pval.HBall) <- nodenames
@@ -191,9 +191,9 @@ NCT <- function(data1,
                                                     edges[[j]][2]]
           }
         }
-        if(match.arg(p_adjust_methods)=="none"){
+        if(p_adjust_methods[1]=="none"){
           HBcorrpvals <- uncorrpvals
-        } else {HBcorrpvals <- p.adjust(uncorrpvals, method = match.arg(p_adjust_methods))}
+        } else {HBcorrpvals <- p.adjust(uncorrpvals, method = p_adjust_methods[1])}
         einv.pvals <- HBcorrpvals
         edges.tested <- colnames(einv.perm)
       }
@@ -210,9 +210,9 @@ NCT <- function(data1,
       diffcen.realmat <- matrix(diffcen.real.vec, it, nnodes, 
                                   byrow = TRUE)
       diffcen.pvaltemp <- colSums(abs(diffcen.perm) >= abs(diffcen.realmat))/it
-      if(match.arg(p_adjust_methods)=="none"){
+      if(p_adjust_methods[1]=="none"){
         diffcen.HBall <- diffcen.pvaltemp
-      } else {diffcen.HBall <- p.adjust(diffcen.pvaltemp, method = match.arg(p_adjust_methods))}
+      } else {diffcen.HBall <- p.adjust(diffcen.pvaltemp, method = p_adjust_methods[1])}
       diffcen.pval <- matrix(diffcen.HBall, nnodes, length(centrality_node))
       colnames(diffcen.pval) <- centrality_node
       if(nodes=="all"){

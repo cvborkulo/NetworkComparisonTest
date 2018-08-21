@@ -1,7 +1,7 @@
 NCT_bootstrap <- function(data1, 
                           data2, 
                           it = 500, 
-                          estimation_method=c("association", "concentration", "EBICglasso", "IsingFit", "custom"), 
+                          estimation_method=c("EBICglasso", "association", "concentration", "IsingFit", "custom"), 
                           paired=FALSE, 
                           weighted=TRUE, 
                           progressbar=TRUE, 
@@ -40,21 +40,21 @@ NCT_bootstrap <- function(data1,
   ## The next 7 lines generate an empty edgelist  
   ## We will store edge invariances in edgelist format, for ease with CIs
   if(missing(edges)){edges <- "all"}
-  if(edges[1]=="all"){
-    edgelist <- matrix(NA,nvars,nvars) 
-    edgelist[upper.tri(edgelist, diag=FALSE)] <- rep(1, nedges)
-    rownames(edgelist) <- colnames(edgelist) <- colnames(data1)
-    edgelist <- reshape2::melt(edgelist, na.rm=TRUE, value.name= "Edge Strength")
-    edgelistVec <- vector()
-    for(i in 1:nedges) {
-      edgelistVec[i] <- paste(edgelist[i, 1], edgelist[i, 2], sep = " -- ")
-    }
-  } else if(is.list(edges)){
+  edgelistVec <- vector()
+  edgelist <- matrix(NA,nvars,nvars) 
+  edgelist[upper.tri(edgelist, diag=FALSE)] <- rep(1, nedges)
+  rownames(edgelist) <- colnames(edgelist) <- colnames(data1)
+  edgelist <- reshape2::melt(edgelist, na.rm=TRUE, value.name= "Edge Strength")
+  for(i in 1:nedges) {
+    edgelistVec[i] <- paste(edgelist[i, 1], edgelist[i, 2], sep = " -- ")
+  }
+  if(is.list(edges)){
+    reduced_edgelistVec <- vector()
       for(i in 1:length(edges)){
-       edgelistVec[i] <- paste(edges[[i]][1], edges[[i]][1], sep = " -- ")
+        reduced_edgelistVec[i] <- paste(edges[[i]][1], edges[[i]][2], sep = " -- ")
       }
   } else{
-    edgelistVec <- paste(edges[1], edges[2], sep = " -- ")
+    reduced_edgelistVec <- paste(edges[1], edges[2], sep = " -- ")
   }
   
   if(missing(nodes)){
@@ -82,6 +82,7 @@ NCT_bootstrap <- function(data1,
   colnames(einv$boot) <- c("Edge","Network1", "Network2", "RealInv", "Estimate", "2.5% CI", "97.5% CI")
   
   diffcen$t <- data.frame(matrix(NA,it,nnodes)) ## Empty data frame. Each column is an empty vector representing a node
+  colnames(diffcen$t) <- nodes
   diffcen$boot <- data.frame(matrix(NA, nnodes,7)) ## Empty data frame for confidence intervals of centrality differences
   diffcen$boot[,1] <- nodes
   colnames(diffcen$boot) <- c("Node","Network1", "Network2", "RealInv", "Estimate", "2.5% CI", "97.5% CI")
@@ -123,7 +124,9 @@ NCT_bootstrap <- function(data1,
   if(test_centrality_node==TRUE){
     diffcen$boot[,2] <- centrality_auto(nw1.real)$node.centrality[nodes,centrality_node]
     diffcen$boot[,3] <- centrality_auto(nw2.real)$node.centrality[nodes,centrality_node]
-    diffcen$boot[,4] <- diffcen.real <- as.matrix(diffcen$boot[,2]) - as.matrix(diffcen$boot[,3])
+    diffcen.real <- as.matrix(diffcen$boot[,2]) - as.matrix(diffcen$boot[,3])
+    rownames(diffcen.real) <- nodes
+    diffcen$boot[,4] <- diffcen.real
   }
   
   
@@ -212,17 +215,26 @@ NCT_bootstrap <- function(data1,
   res$glstrinv.sep <- glstrinv.sep
   res$glstrinv.est <- glstrinv.est
   res$glstrinv.ci <- glstrinv$ci
-  res$glstrinv.t <- glstrinv$t
+  if(include_t){
+    res$glstrinv.t <- glstrinv$t
+  }
   res$nwinv.real <- nwinv.real
   res$nwinv.sep <- nwinv.sep
   res$nwinv.est <- nwinv.est
   res$nwinv.ci <- nwinv.ci
   if(test_edges){
-    res$einv.real <- einv$einv.real
-    res$einv.mat <- einv$boot
-    if(include_t){
-      res$einv.t <- einv$t
+    if(is.list(edges)){
+      res$einv.mat <- einv$boot[einv$boot$Edge %in% reduced_edgelistVec,]
+      if(include_t){
+        res$einv.t <- einv$t[,colnames(einv$t) %in% reduced_edgelistVec]
+      }
+    } else {
+      res$einv.mat <- einv$boot
+      if(include_t){
+        res$einv.t <- einv$t
+      }
     }
+    res$einv.real <- einv$einv.real
   }
   if(test_centrality_node){
     res$diffcen.real <- diffcen.real
