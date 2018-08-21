@@ -222,6 +222,7 @@ NCT_bootstrap <- function(data1,
   res$nwinv.sep <- nwinv.sep
   res$nwinv.est <- nwinv.est
   res$nwinv.ci <- nwinv.ci
+  res$edges.tested <- edges
   if(test_edges){
     if(is.list(edges)){
       res$einv.mat <- einv$boot[einv$boot$Edge %in% reduced_edgelistVec,]

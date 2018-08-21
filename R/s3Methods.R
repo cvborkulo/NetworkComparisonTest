@@ -1,5 +1,6 @@
 summary.NCT <- function(object,...){
   if(object$method == "permute") {
+    if(is.null(object$edges.tested)){object$edges.tested <- "none"}
     cat("\n NETWORK INVARIANCE TEST
         Test statistic M: ", object$nwinv.real,
         "\n p-value", object$nwinv.pval,
@@ -8,10 +9,12 @@ summary.NCT <- function(object,...){
         "\n Test statistic S: ", object$glstrinv.real,
         "\n p-value", object$glstrinv.pval,
         "\n\n EDGE INVARIANCE TEST
-        Edges tested: ", object$edges.tested,
-        "\n Test statistic E: ", object$einv.real,
-        "\n p-value", object$einv.pvals
-    )}
+        Edges tested: ", as.character(object$edges.tested),
+        "\n Test statistic E: ")
+    print(object$einv.real)
+    cat("\n p-value \n")
+    print(object$einv.pvals)
+    }
   if(object$method == "bootstrap") {
     cat("\n NETWORK INVARIANCE TEST
         estimate: ", object$nwinv.est,
@@ -21,11 +24,9 @@ summary.NCT <- function(object,...){
         "\n Confidence interval: ", object$glstrinv.ci,
         "\n\n EDGE INVARIANCE TEST
         Edges tested?: ", object$edges.tested,
-        "\n Edge invariance summary: ",
-        head(object$edgeinv.mat),
-        "\n"
+        "\n Edge invariance summary: "
     )
-    return(format.data.frame(object$einv, digits = 3))
+    print(object$einv.mat)
   }
 }
 
@@ -35,9 +36,8 @@ print.NCT <- function(x,...){
     print(x)
   }
   if(x$method=="bootstrap"){
-    badItems <- c("glstrinv.t", "edgeinv.t")
+    badItems <- c("glstrinv.t", "einv.t")
     x[which(names(x) %in% badItems)] <- NULL
-    x$edgeinv.mat <- head(x$edgeinv.mat)
     cat("\n")
     print(x)
   } 
@@ -84,6 +84,10 @@ plot.NCT <- function(x,what = c("strength","network","edge"),...){
     } 
     
     if (what == "edge"){
+      print("Method not implemented yet")
+      
+    }
+    if (what == "network"){
       print("Method not implemented yet")
       
     }
