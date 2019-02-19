@@ -170,6 +170,7 @@ NCT <- function(data1,
         } else {ept.HBall <- p.adjust(edges.pvaltemp, method = p_adjust_methods[1])}
         edges.pval.HBall[upper.tri(edges.pval.HBall, 
                                    diag = FALSE)] <- ept.HBall
+        edges.pval.HBall <- edges.pval.HBall + t(edges.pval.HBall)
         colnames(edges.pval.HBall) <- rownames(edges.pval.HBall) <- nodenames
         einv.pvals <- melt(edges.pval.HBall, na.rm = TRUE, 
                            value.name = "p-value")
