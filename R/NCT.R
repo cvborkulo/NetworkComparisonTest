@@ -15,8 +15,9 @@ NCT <- function(data1,
                 estimatorArgs = list(), # Arguments sent to the estimator function
                 
                 # Optionally set a different estimator for group 2 (if missing overwritten with estimator and estimatorArgs)
-                estimator2, # Assign this a function with an estimator (e.g., obtained from bootnet). This will OVERWRITE binary.data when used!
-                estimatorArgs2 = list() # Arguments sent to the estimator function
+                # estimator2, # Assign this a function with an estimator (e.g., obtained from bootnet). This will OVERWRITE binary.data when used!
+                # estimatorArgs2 = list(), # Arguments sent to the estimator function
+                verbose = TRUE
 ){ 
   p.adjust.methods <- match.arg(p.adjust.methods)
   
@@ -25,33 +26,39 @@ NCT <- function(data1,
   if (is(data1,"bootnetResult") || is(data2,"bootnetResult")){
     mc <- match.call()
     if ("gamma" %in% names(mc)){
-      warning("Input is a bootnetResult object, argument 'gamma' is ignored.")
+      if (verbose) message("Note: Input is a bootnetResult object, argument 'gamma' is ignored.")
     }
     
     if ("binary.data" %in% names(mc)){
-      warning("Input is a bootnetResult object, argument 'binary.data' is ignored.")
+      if (verbose) message("Note: Input is a bootnetResult object, argument 'binary.data' is ignored.")
     }
     
     if ("AND" %in% names(mc)){
-      warning("Input is a bootnetResult object, argument 'AND' is ignored.")
+      if (verbose) message("Note: Input is a bootnetResult object, argument 'AND' is ignored.")
     }
     
     if ("make.positive.definite" %in% names(mc)){
-      warning("Input is a bootnetResult object, argument 'make.positive.definite' is ignored.")
+      if (verbose) message("Note: Input is a bootnetResult object, argument 'make.positive.definite' is ignored.")
+    }
+    
+    # Check if estimator function is used:
+    if (!missing(estimator)){
+      stop("Custom estimator function not supported for bootnet objects.")
     }
   }
   
   # If object 1 is a bootnetResult, extract data, estimator and args:
   if (is(data1,"bootnetResult")){
+    if (verbose) message("Note: estimateNetwork object used - estimation method has possibly not been validated.")
     # Estimator:
-    if (missing(estimator)){
+    # if (missing(estimator)){
       estimator <- data1$estimator
-    }
+    # }
     # Arguments:
-    if (missing(estimatorArgs)){
+    # if (missing(estimatorArgs)){
       estimatorArgs <- data1$arguments
       estimatorArgs$verbose <- FALSE
-    }
+    # }
     # Data:
     data1 <- data1$data
   }
@@ -59,14 +66,26 @@ NCT <- function(data1,
   # If object 2 is a bootnetResult, extract data, estimator and args:
   if (is(data2,"bootnetResult")){
     # Estimator:
-    if (missing(estimator2)){
+    # if (missing(estimator2)){
       estimator2 <- data2$estimator
-    }
+    # }
     # Arguments:
-    if (missing(estimatorArgs2)){
+    # if (missing(estimatorArgs2)){
       estimatorArgs2 <- data2$arguments
       estimatorArgs2$verbose <- FALSE
-    }
+    # }
+      
+      # Test if estimation methods are identical:
+      if (!identical(estimator,estimator2)){
+        stop("Estimation methods are not identical.")
+      }
+      
+      # Test if arguments are identical:
+      # Test if estimation methods are identical:
+      if (!identical(estimatorArgs,estimatorArgs2)){
+        stop("Estimation arguments are not identical.")
+      }
+      
     # Data:
     data2 <- data2$data
   }
@@ -96,17 +115,11 @@ NCT <- function(data1,
     # Look at the call if someone also used "binary.data":
     mc <- match.call()
     if ("binary.data" %in% names(mc)){
-      warning("Both 'estimator' and 'binary.data' arguments used: only the 'estimator' will be used ('binary.data' will be ignored)")
+      if (verbose) message("Note: Both 'estimator' and 'binary.data' arguments used: only the 'estimator' will be used ('binary.data' will be ignored)")
     }
   }
   
-  # If estimator2 is missing, set to estimator:
-  if (missing(estimator2)){
-    estimator2 <- estimator
-  }
-  if (missing(estimatorArgs2)){
-    estimatorArgs2 <- estimatorArgs
-  }
+  
   
   if (progressbar==TRUE) pb <- txtProgressBar(max=it, style = 3)
   x1 <- data1
@@ -133,7 +146,7 @@ NCT <- function(data1,
   nw1 <- do.call(estimator,c(list(x1),estimatorArgs))
   if (is.list(nw1)) nw1 <- nw1$graph
   
-  nw2 <- do.call(estimator2,c(list(x2),estimatorArgs2))
+  nw2 <- do.call(estimator,c(list(x2),estimatorArgs))
   if (is.list(nw2)) nw2 <- nw2$graph
   
   if(weighted==FALSE){
@@ -175,7 +188,7 @@ NCT <- function(data1,
       r1perm <- do.call(estimator,c(list(x1perm),estimatorArgs))
       if (is.list(r1perm)) r1perm <- r1perm$graph
       
-      r2perm <- do.call(estimator2,c(list(x2perm),estimatorArgs2))
+      r2perm <- do.call(estimator,c(list(x2perm),estimatorArgs))
       if (is.list(r2perm)) r2perm <- r2perm$graph
       
       if(weighted==FALSE){
@@ -198,7 +211,7 @@ NCT <- function(data1,
       r1perm <- do.call(estimator,c(list(x1perm),estimatorArgs))
       if (is.list(r1perm)) r1perm <- r1perm$graph
       
-      r2perm <- do.call(estimator2,c(list(x2perm),estimatorArgs2))
+      r2perm <- do.call(estimator,c(list(x2perm),estimatorArgs))
       if (is.list(r2perm)) r2perm <- r2perm$graph
       
       if(weighted==FALSE){

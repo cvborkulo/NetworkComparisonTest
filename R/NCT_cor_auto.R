@@ -8,8 +8,10 @@ NCT_cor_auto <- function(data1,
                          edges, 
                          progressbar=TRUE,
                          make.positive.definite=TRUE,
-                         p.adjust.methods="none"
+                         p.adjust.methods="none",
+                         verbose = TRUE
 ){ 
+  if (verbose) message("Note: polychoric correlations input has not been validated.")
   
   # Dit is nu een simpele wrapper om NCT:
   NCT(
@@ -27,8 +29,7 @@ NCT_cor_auto <- function(data1,
     p.adjust.methods = p.adjust.methods,
     estimator = NCT_estimator_GGM,
     estimatorArgs = list(gamma = gamma, make.positive.definite = make.positive.definite, corMethod = "cor_auto"),
-    estimator2  = NCT_estimator_GGM,
-    estimatorArgs2 = list(gamma = gamma, make.positive.definite = make.positive.definite, corMethod = "cor_auto")
+    verbose = verbose
   )
   
   

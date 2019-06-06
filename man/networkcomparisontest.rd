@@ -14,7 +14,7 @@ NCT(data1, data2, gamma, it = 100, binary.data = FALSE,
     make.positive.definite = TRUE, p.adjust.methods =
     c("none", "holm", "hochberg", "hommel", "bonferroni",
     "BH", "BY", "fdr"), estimator, estimatorArgs = list(),
-    estimator2, estimatorArgs2 = list())
+    verbose = TRUE)
 }
 
 \arguments{
@@ -63,12 +63,7 @@ A function that takes data as input and returns a network structure. This can be
 \item{estimatorArgs}{
 Arguments to the \code{estimator} function
 }
-  \item{estimator2}{
-Optional estimator function for the second dataset (if not supplied, the \code{estimator} argument is used).
-}
-\item{estimatorArgs2}{
-Arguments to the \code{estimator2} function
-}
+\item{verbose}{Logical: Should some warnings and notes be printed?}
 
 }
 
