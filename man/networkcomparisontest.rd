@@ -8,17 +8,21 @@ Statistical Comparison of Two Networks Based on Three Invariance Measures
 This permutation based hypothesis test, suited for gaussian and binary data, assesses the difference between two networks based on several invariance measures (network structure invariance, global strength invariance, edge invariance). Network structures are estimated with l1-regularized partial correlations (gaussian data) or with l1-regularized logistic regression (eLasso, binary data). Suited for comparison of independent and dependent samples. For dependent samples, only supported for data of one group which is measured twice.
 }
 \usage{
-NCT(data1, data2, gamma, it, binary.data=FALSE, paired=FALSE, 
-    weighted=TRUE, AND=TRUE, test.edges=FALSE, edges, 
-    progressbar=TRUE, make.positive.definite=TRUE, p.adjust.methods="none")
+NCT(data1, data2, gamma, it = 100, binary.data = FALSE,
+    paired = FALSE, weighted = TRUE, AND = TRUE,
+    test.edges = FALSE, edges, progressbar = TRUE,
+    make.positive.definite = TRUE, p.adjust.methods =
+    c("none", "holm", "hochberg", "hommel", "bonferroni",
+    "BH", "BY", "fdr"), estimator, estimatorArgs = list(),
+    estimator2, estimatorArgs2 = list())
 }
 
 \arguments{
   \item{data1}{
-One of two datasets. The dimension of the matrix is nobs x nvars; each row is a vector of observations of the variables. Must be cross-sectional data.
+One of two datasets. The dimension of the matrix is nobs x nvars; each row is a vector of observations of the variables. Must be cross-sectional data. Can also be the result of \code{estimateNetwork} from the bootnet package.
 }
   \item{data2}{
-The other of two datasets. The dimension of the matrix is nobs x nvars; each row is a vector of observations of the variables. Must be cross-sectional data.
+The other of two datasets. The dimension of the matrix is nobs x nvars; each row is a vector of observations of the variables. Must be cross-sectional data.  Can also be the result of \code{estimateNetwork} from the bootnet package.
 }
   \item{gamma}{
 A single value between 0 and 1. When not entered, gamma is set to 0.25 for binary data and 0.50 for gaussian data. Networks are estimated with this value for hyperparameter gamma in the extended BIC.
@@ -53,7 +57,18 @@ If \code{make.positive.definite = TRUE}, the covariance matrices used for the gl
   \item{p.adjust.methods}{
 Character. Can be one of "holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr", or "none". To control (or not) for testing of multiple edges. Defaults to "none".
 }
-
+  \item{estimator}{
+A function that takes data as input and returns a network structure. This can be used for custom estimation algorithms. Note, supplying this function will overwrite the arguments \code{binary.data}, \code{AND}, \code{gamma} and \code{make.positive.definite}.
+}
+\item{estimatorArgs}{
+Arguments to the \code{estimator} function
+}
+  \item{estimator2}{
+Optional estimator function for the second dataset (if not supplied, the \code{estimator} argument is used).
+}
+\item{estimatorArgs2}{
+Arguments to the \code{estimator2} function
+}
 
 }
 
