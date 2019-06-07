@@ -200,6 +200,7 @@ NCT <- function(data1,
     # If paired data
     if(paired==TRUE)
     {
+      if (verbose) message("Note: NCT for dependent data has not been validated.")
       s <- sample(c(1,2),nobs1,replace=TRUE)
       x1perm <- x1[s==1,]
       x1perm <- rbind(x1perm,x2[s==2,])
