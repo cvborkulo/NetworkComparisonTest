@@ -7,10 +7,15 @@ NCT <- function(data1,
                 weighted=TRUE, 
                 AND=TRUE, 
                 test.edges=FALSE, 
-                edges, 
+                edges="all", 
                 progressbar=TRUE,
                 make.positive.definite=TRUE,
                 p.adjust.methods= c("none", "holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr"), # Edit from Payton
+                test.centrality=FALSE,
+                centrality=c("strength","expectedInfluence"),
+                nodes="all",
+                communities=NULL,
+                useCommunities="all",
                 estimator, # Assign this a function with an estimator (e.g., obtained from bootnet). This will OVERWRITE binary.data when used!
                 estimatorArgs = list(), # Arguments sent to the estimator function
                 
@@ -137,6 +142,13 @@ NCT <- function(data1,
   einv.perm.all <- array(NA,dim=c(nvars, nvars, it))
   corrpvals.all <- matrix(NA,nvars,nvars)
   edges.pvalmattemp <- matrix(0,nvars,nvars)
+  diffcen.perm <- matrix(NA, it, nvars*length(centrality))
+  
+  validCentrality <- c("closeness", "betweenness", 
+                       "strength", "expectedInfluence", "bridgeStrength", 
+                       "bridgeCloseness", "bridgeBetweenness", "bridgeExpectedInfluence")
+  bridgecen <- c("bridgeStrength", "bridgeCloseness", 
+                 "bridgeBetweenness", "bridgeExpectedInfluence")
   
   #####################################
   ###    procedure for all data     ###
@@ -167,6 +179,29 @@ NCT <- function(data1,
   
   ## Network structure invariance
   nwinv.real <- max(diffedges.real)
+  
+  ## Centrality invariance
+
+  if(test.centrality==TRUE){
+    if (!all(centrality %in% validCentrality)) {
+      stop(paste0("'centrality' must be one of: ", paste0("'", 
+                                                          validCentrality, "'", collapse = ", ")))
+    }
+    cen1 <- centrality_auto(nw1)$node.centrality
+    cen2 <- centrality_auto(nw2)$node.centrality
+    names(cen1) <- names(cen2) <- c("betweenness","closeness","strength","expectedInfluence")
+    if(TRUE %in% (bridgecen %in% centrality)){
+      b1 <- networktools::bridge(nw1, communities=communities, useCommunities=useCommunities)
+      b2 <- networktools::bridge(nw2, communities=communities, useCommunities=useCommunities)
+      names(b1) <- names(b2) <- c(bridgecen, "bridgeExpectedInfluence2step", 
+                                  "communities")
+      cen1 <- data.frame(c(cen1,b1))
+      cen2 <- data.frame(c(cen2,b2))
+    }
+    cen1 <- cen1[,centrality]
+    cen2 <- cen2[,centrality]
+    diffcen.real <- as.matrix(cen1) - as.matrix(cen2)
+  }
   
   
   #####################################
@@ -229,6 +264,28 @@ NCT <- function(data1,
     einv.perm.all[,,i] <- diffedges.permtemp
     nwinv.perm[i] <- max(diffedges.perm[i,])
     
+    if(test.centrality==TRUE){
+      cen1permtemp <- centrality_auto(r1perm)$node.centrality
+      cen2permtemp <- centrality_auto(r2perm)$node.centrality
+      names(cen1permtemp) <- names(cen2permtemp) <- c("betweenness","closeness","strength","expectedInfluence")
+      if(TRUE %in% (bridgecen %in% centrality)){
+        b1permtemp <- networktools::bridge(r1perm, communities=communities, useCommunities=useCommunities)
+        b2permtemp <- networktools::bridge(r2perm, communities=communities, useCommunities=useCommunities)
+        names(b1permtemp) <- names(b2permtemp) <- c(bridgecen, "bridgeExpectedInfluence2step", 
+                                    "communities")
+        cen1permtemp <- data.frame(c(cen1permtemp,b1))
+        cen2permtemp <- data.frame(c(cen2permtemp,b2))
+      }
+      cen1permtemp <- cen1permtemp[,centrality]
+      cen2permtemp <- cen2permtemp[,centrality]
+      diffcen.permtemp <- as.matrix(cen1permtemp) - as.matrix(cen2permtemp)
+      if(nodes=="all"){
+        diffcen.perm[i,] <- reshape2::melt(diffcen.permtemp[,centrality])$value
+      } else {
+        diffcen.perm[i,] <- reshape2::melt(diffcen.permtemp[nodes,centrality])$value
+      } 
+    }
+    
     if (progressbar==TRUE) setTxtProgressBar(pb, i)
   }
   #####################################
@@ -256,6 +313,8 @@ NCT <- function(data1,
       einv.pvals <- melt(corrpvals.all, na.rm=TRUE, value.name = 'p-value')
       einv.perm <- einv.perm.all
       einv.real <- diffedges.realoutput
+      
+      edges.tested <- "all"
     }
     
     ## If a selection of edges should be tested
@@ -284,9 +343,10 @@ NCT <- function(data1,
       corrpvals_mat[,1:2] <- pairs
       einv.pvals <- as.data.frame(corrpvals_mat)
       colnames(einv.pvals) <- c('Var1', 'Var2', 'p-value')
+      
+      edges.tested <- colnames(einv.perm)
     }
     
-    edges.tested <- colnames(einv.perm)
     
     res <- list(glstrinv.real = glstrinv.real,
                 glstrinv.sep = glstrinv.sep,
@@ -318,6 +378,34 @@ NCT <- function(data1,
       nw1 = nw1,
       nw2 = nw2
     )
+  }
+  
+  if(test.centrality){
+    if(nodes=="all"){
+      diffcen.real.vec <- reshape2::melt(diffcen.real[,centrality])$value
+      nnodes <- nvars
+    } else {
+      diffcen.real.vec <- melt(diffcen.real[nodes,centrality])$value
+      nnodes <- length(nodes)
+    } 
+    diffcen.realmat <- matrix(diffcen.real.vec, it, nnodes*length(centrality), 
+                              byrow = TRUE)
+    diffcen.pvaltemp <- colSums(abs(diffcen.perm) >= abs(diffcen.realmat))/it
+    diffcen.HBall <- p.adjust(diffcen.pvaltemp, method = p.adjust.methods)
+    diffcen.pval <- matrix(diffcen.HBall, nnodes, length(centrality))
+    colnames(diffcen.pval) <- centrality
+    res[["diffcen.real"]] <- matrix(diffcen.real.vec, nrow=nnodes,ncol=length(centrality), 
+                                    dimnames=list(rownames(diffcen.pval), centrality))
+    res[["diffcen.perm"]] <- diffcen.perm
+    res[["diffcen.pval"]] <- diffcen.pval
+    
+    # Column & row names
+    if(nodes=="all"){
+      rownames(res[["diffcen.real"]]) <- rownames(res[["diffcen.pval"]]) <- colnames(data1)
+      colnames(res[["diffcen.perm"]]) <- apply(expand.grid(colnames(data1), centrality), 1, paste, collapse=".")
+    } else {
+      rownames(res[["diffcen.real"]]) <- rownames(res[["diffcen.pval"]]) <- nodes
+    }
   }
   
   # }
@@ -515,6 +603,23 @@ NCT <- function(data1,
 
 ## Methods:
 
+## TODO: Add print.NCT with a bit more girth
+## TODO: add option for global expected influence
+
+print.NCT <- function(x,...){
+  cat("\n NETWORK INVARIANCE TEST
+      Test statistic M: ", x$nwinv.real,
+      "\n p-value", x$nwinv.pval,
+      "\n\n GLOBAL STRENGTH INVARIANCE TEST
+      Global strength per group: ", x$glstrinv.sep,
+      "\n Test statistic S: ", x$glstrinv.real,
+      "\n p-value", x$glstrinv.pval,
+      "\n\n EDGE INVARIANCE TEST \n\n")
+  print(x$einv.pvals)
+  cat("\n CENTRALITY INVARIANCE TEST \n\n")
+  print(x$diffcen.pval)
+}
+
 summary.NCT <- function(x,...){
   
   cat("\n NETWORK INVARIANCE TEST
@@ -527,9 +632,12 @@ summary.NCT <- function(x,...){
       "\n\n EDGE INVARIANCE TEST
       Edges tested: ", x$edges.tested,
       "\n Test statistic E: ", x$einv.real,
-      "\n p-value", x$einv.pvals
-  )
-  
+      "\n p-value", x$einv.pvals$`p-value`,
+      "\n\n CENTRALITY INVARIANCE TEST
+      Nodes tested:", rownames(x$diffcen.pval),
+      "\n Centralities tested:", colnames(x$diffcen.pval),
+      "\n Test statistic C: ", reshape2::melt(x$diffcen.real)$value,
+      "\n p-value", reshape2::melt(x$diffcen.pval)$value)
 }
 
 plot.NCT <- function(x,what = c("strength","network","edge"),...){
