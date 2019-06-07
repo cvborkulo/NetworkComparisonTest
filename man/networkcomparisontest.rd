@@ -5,20 +5,24 @@
 Statistical Comparison of Two Networks Based on Three Invariance Measures
 }
 \description{
-This permutation based hypothesis test, suited for gaussian and binary data, assesses the difference between two networks based on several invariance measures (network structure invariance, global strength invariance, edge invariance). Network structures are estimated with l1-regularized partial correlations (gaussian data) or with l1-regularized logistic regression (eLasso, binary data). Suited for comparison of independent and dependent samples (currently, only for one group measured twice).
+This permutation based hypothesis test, suited for gaussian and binary data, assesses the difference between two networks based on several invariance measures (network structure invariance, global strength invariance, edge invariance). Network structures are estimated with l1-regularized partial correlations (gaussian data) or with l1-regularized logistic regression (eLasso, binary data). Suited for comparison of independent and dependent samples. For dependent samples, only supported for data of one group which is measured twice.
 }
 \usage{
-NCT(data1, data2, gamma, it=100, binary.data=FALSE, paired=FALSE, 
-    weighted=TRUE, AND=TRUE, test.edges=FALSE, edges, 
-    progressbar=TRUE, method=c("permute", "bootstrap"))
+NCT(data1, data2, gamma, it = 100, binary.data = FALSE,
+    paired = FALSE, weighted = TRUE, AND = TRUE,
+    test.edges = FALSE, edges, progressbar = TRUE,
+    make.positive.definite = TRUE, p.adjust.methods =
+    c("none", "holm", "hochberg", "hommel", "bonferroni",
+    "BH", "BY", "fdr"), estimator, estimatorArgs = list(),
+    verbose = TRUE)
 }
 
 \arguments{
   \item{data1}{
-One of two datasets. The dimension of the matrix is nobs x nvars; each row is a vector of observations of the variables. Must be cross-sectional data.
+One of two datasets. The dimension of the matrix is nobs x nvars; each row is a vector of observations of the variables. Must be cross-sectional data. Can also be the result of \code{estimateNetwork} from the bootnet package.
 }
   \item{data2}{
-The other of two datasets. The dimension of the matrix is nobs x nvars; each row is a vector of observations of the variables. Must be cross-sectional data.
+The other of two datasets. The dimension of the matrix is nobs x nvars; each row is a vector of observations of the variables. Must be cross-sectional data.  Can also be the result of \code{estimateNetwork} from the bootnet package.
 }
   \item{gamma}{
 A single value between 0 and 1. When not entered, gamma is set to 0.25 for binary data and 0.50 for gaussian data. Networks are estimated with this value for hyperparameter gamma in the extended BIC.
@@ -42,16 +46,28 @@ Logical. Can be TRUE of FALSE to indicate whether the AND-rule or the OR-rule sh
 Logical. Can be TRUE of FALSE to indicate whether or not differences in individual edges should be tested.
 }
   \item{edges}{
-Character or list. When 'all', differences between all individual edges are tested. When provided a list with one or more pairs of indices referring to variables, the provided edges are tested. A Holm-Bonferroni correction is applied to control for multiple testing.
+Character or list. When 'all', differences between all individual edges are tested. When provided a list with one or more pairs of indices referring to variables, the provided edges are tested.
 }
   \item{progressbar}{
 Logical. Should the pbar be plotted in order to see the progress of the estimation procedure? Defaults to TRUE.
 }
-  \item{method}{
-Default method="permute" is a permutation test, which returns a p-value. Use method="bootstrap" to return an estimated effect size with a confidence interval. 
-See also ?NCT_bootstrap
+  \item{make.positive.definite}{
+If \code{make.positive.definite = TRUE}, the covariance matrices used for the glasso are projected to the nearest positive definite matrices, if they are not yet positive definite. This is useful for small n, for which it is very likely that at least one of the bootstrap comparisons involves a covariance matrix that is not positive definite.
 }
+  \item{p.adjust.methods}{
+Character. Can be one of "holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr", or "none". To control (or not) for testing of multiple edges. Defaults to "none".
 }
+  \item{estimator}{
+A function that takes data as input and returns a network structure. This can be used for custom estimation algorithms. Note, supplying this function will overwrite the arguments \code{binary.data}, \code{AND}, \code{gamma} and \code{make.positive.definite}.
+}
+\item{estimatorArgs}{
+Arguments to the \code{estimator} function
+}
+\item{verbose}{Logical: Should some warnings and notes be printed?}
+
+}
+
+
 
 \value{
 NCT returns a 'NCT' object that contains the following items:
@@ -62,7 +78,7 @@ NCT returns a 'NCT' object that contains the following items:
 \item{nwinv.real}{The value of the maximum difference in edge weights of the observed networks}
 \item{nwinv.perm}{The values of the maximum difference in edge weights of the permuted networks}
 \item{nwinv.pval }{The p value resulting from the permutation test concerning the maximum difference in edge weights.}
-\item{einv.pvals}{The Holm-Bonferroni corrected p values per edge from the permutation test concerning differences in edges weights. Only if test.edges = TRUE.}
+\item{einv.pvals}{p-values (corrected for multiple testing or not according to 'p.adjust.methods') per edge from the permutation test concerning differences in edges weights. Only returned if test.edges = TRUE.}
 \item{edges.tested}{The pairs of variables between which the edges are called to be tested. Only if test.edges = TRUE.}
 \item{einv.real}{The value of the difference in edge weight of the observed networks (multiple values if more edges are called to test). Only if test.edges = TRUE.}
 \item{einv.perm}{The values of the difference in edge weight of the permuted networks. Only if test.edges = TRUE.}
@@ -75,10 +91,10 @@ Good, P.I. Permutation, parametric and bootstrap tests of hypotheses. Vol. 3. Ne
 
 van Borkulo, C. D., Boschloo, L., Borsboom, D., Penninx, B. W. J. H., Waldorp, L. J., & Schoevers, R.A. (2015). Association of symptom network structure with the course of depression. JAMA Psychiatry. 2015;72(12). doi:10.1001/jamapsychiatry.2015.2079
 
-van Borkulo, C. D., Boschloo, Kossakowski, J., Tio, P., L., Schoevers, R.A., Borsboom, D., & , Waldorp, L. J. (2016). Comparing network structures on three aspects: A permutation test. Manuscript submitted for publication. 
+van Borkulo, C. D., Boschloo, Kossakowski, J., Tio, P., L., Schoevers, R.A., Borsboom, D., & , Waldorp, L. J. (2016). Comparing network structures on three aspects: A permutation test. doi:10.13140/RG.2.2.29455.38569
 }
 \author{
-Claudia D. van Borkulo, with contributions from Sacha Epskamp and Alex Millner
+Claudia D. van Borkulo, with contributions from Jonas Haslbeck, Sacha Epskamp and Alex Millner
 
 Maintainer: Claudia D. van Borkulo <cvborkulo@gmail.com>
 }
@@ -105,9 +121,12 @@ Thresh <- -rowSums(Graph) / 2
 # Simulate:
 data1 <- IsingSampler(nSample, Graph, Thresh)
 data2 <- IsingSampler(nSample, Graph, Thresh)
+colnames(data1) <- colnames(data2) <- c('V1', 'V2', 'V3', 'V4', 'V5', 'V6')
 
 ### Compare networks of data sets using NCT ###
-# with gamma = 0. Iterations set to 10 to save time. Should be 1000 at least.
+# with gamma = 0. 
+# Iterations (it) set to 10 to save time.
+# Low number of iterations can give unreliable results. Should be 1000 at least.
 
 # Testing on all three aspects
 # 2 edges are tested here: between variable 1 and 2, 

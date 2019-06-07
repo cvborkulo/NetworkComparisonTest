@@ -1,19 +1,15 @@
 export(NCT)
-export(NCT_bootstrap)
 S3method(plot,NCT)
 S3method(summary,NCT)
-S3method(print,NCT)
 
 import(qgraph)
 import(IsingFit)
 import(IsingSampler)
 import(reshape2)
-import(ppcor)
-import(psych)
-
 importFrom("graphics", "hist", "points")
 importFrom("stats", "cor", "p.adjust")
 importFrom("utils", "setTxtProgressBar", "txtProgressBar")
-importFrom("graphics", "abline")
-importFrom("stats", "quantile")
-importFrom("utils", "head")
+importFrom("Matrix", "nearPD")
+
+
+importFrom("methods", "is")

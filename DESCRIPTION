@@ -1,10 +1,9 @@
 Package: NetworkComparisonTest
 Type: Package
 Title: Statistical Comparison of Two Networks Based on Three Invariance Measures
-Version: 2.0.1
-Date: 2016-10-28
-Author: Claudia D. van Borkulo, with contributions from Sacha Epskamp and Alex Millner
-Maintainer: Claudia van Borkulo <cvborkulo@gmail.com>
+Version: 2.1.2
+Author: Claudia D. van Borkulo, with contributions from Jonas Haslbeck, Sacha Epskamp, and Alex Millner
+Maintainer: Claudia van Borkulo <cvborkulo@gmail.com> 
 Imports:
     qgraph,
     IsingFit,
@@ -13,8 +12,8 @@ Imports:
     stats,
     graphics,
     utils,
-    psych,
-    ppcor
+    Matrix,
+    methods
 Description: This permutation based hypothesis test, suited for Gaussian and
     binary data, assesses the difference between two networks based on several
     invariance measures (network structure invariance, global strength invariance,
@@ -23,4 +22,4 @@ Description: This permutation based hypothesis test, suited for Gaussian and
     binary data). Suited for comparison of independent and dependent samples
     (currently, only for one group measured twice).
 License: GPL-2
-RoxygenNote: 6.0.1
+RoxygenNote: 5.0.1

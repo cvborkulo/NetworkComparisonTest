@@ -1,25 +1,129 @@
 NCT <- function(data1, 
                 data2, 
-                it = 500, 
-                estimation_method=c("EBICglasso", "association", "concentration", "IsingFit", "custom"), 
+                gamma, 
+                it = 100, 
+                binary.data=FALSE, 
                 paired=FALSE, 
                 weighted=TRUE, 
-                progressbar=TRUE, 
-                test_edges=FALSE, 
-                edges,
-                nodes,
-                custom_estimation_method, 
-                centrality_global=c("ExpectedInfluence", "Strength"),
-                test_centrality_node=FALSE,
-                centrality_node=c("ExpectedInfluence", "Strength", "Betweenness", "Closeness"), 
-                p_adjust_methods=c("none", "holm","fdr","BY")){
+                AND=TRUE, 
+                test.edges=FALSE, 
+                edges, 
+                progressbar=TRUE,
+                make.positive.definite=TRUE,
+                p.adjust.methods= c("none", "holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr"), # Edit from Payton
+                estimator, # Assign this a function with an estimator (e.g., obtained from bootnet). This will OVERWRITE binary.data when used!
+                estimatorArgs = list(), # Arguments sent to the estimator function
+                
+                # Optionally set a different estimator for group 2 (if missing overwritten with estimator and estimatorArgs)
+                # estimator2, # Assign this a function with an estimator (e.g., obtained from bootnet). This will OVERWRITE binary.data when used!
+                # estimatorArgs2 = list(), # Arguments sent to the estimator function
+                verbose = TRUE
+){ 
+  p.adjust.methods <- match.arg(p.adjust.methods)
   
-  if (progressbar == TRUE) 
-    pb <- txtProgressBar(max = it, style = 3)
- 
-  ## Set up data structures
-  x1 <- data.frame(data1)
-  x2 <- data.frame(data2)
+  # Small test to warn people of arguments that are ignored if the input is a bootnet object:
+  # Test for bootnet objects:
+  if (is(data1,"bootnetResult") || is(data2,"bootnetResult")){
+    mc <- match.call()
+    if ("gamma" %in% names(mc)){
+      if (verbose) message("Note: Input is a bootnetResult object, argument 'gamma' is ignored.")
+    }
+    
+    if ("binary.data" %in% names(mc)){
+      if (verbose) message("Note: Input is a bootnetResult object, argument 'binary.data' is ignored.")
+    }
+    
+    if ("AND" %in% names(mc)){
+      if (verbose) message("Note: Input is a bootnetResult object, argument 'AND' is ignored.")
+    }
+    
+    if ("make.positive.definite" %in% names(mc)){
+      if (verbose) message("Note: Input is a bootnetResult object, argument 'make.positive.definite' is ignored.")
+    }
+    
+    # Check if estimator function is used:
+    if (!missing(estimator)){
+      stop("Custom estimator function not supported for bootnet objects.")
+    }
+  }
+  
+  # If object 1 is a bootnetResult, extract data, estimator and args:
+  if (is(data1,"bootnetResult")){
+    if (verbose) message("Note: estimateNetwork object used - estimation method has possibly not been validated.")
+    # Estimator:
+    # if (missing(estimator)){
+      estimator <- data1$estimator
+    # }
+    # Arguments:
+    # if (missing(estimatorArgs)){
+      estimatorArgs <- data1$arguments
+      estimatorArgs$verbose <- FALSE
+    # }
+    # Data:
+    data1 <- data1$data
+  }
+  
+  # If object 2 is a bootnetResult, extract data, estimator and args:
+  if (is(data2,"bootnetResult")){
+    # Estimator:
+    # if (missing(estimator2)){
+      estimator2 <- data2$estimator
+    # }
+    # Arguments:
+    # if (missing(estimatorArgs2)){
+      estimatorArgs2 <- data2$arguments
+      estimatorArgs2$verbose <- FALSE
+    # }
+      
+      # Test if estimation methods are identical:
+      if (!identical(estimator,estimator2)){
+        stop("Estimation methods are not identical.")
+      }
+      
+      # Test if arguments are identical:
+      # Test if estimation methods are identical:
+      if (!identical(estimatorArgs,estimatorArgs2)){
+        stop("Estimation arguments are not identical.")
+      }
+      
+    # Data:
+    data2 <- data2$data
+  }
+  
+  
+  # Gamma (note, not used for bootnet objects):
+  if (missing(gamma)){
+    if (binary.data){
+      gamma <- 0.25
+    } else {
+      gamma <- 0.5
+    }
+  } 
+  
+  # Estimator function:
+  if (missing(estimator)){
+
+    if (binary.data){
+      estimator <- NCT_estimator_Ising
+      estimatorArgs$AND <- AND
+    } else {
+      estimator <- NCT_estimator_GGM
+      estimatorArgs$make.positive.definite <- make.positive.definite
+    }
+    estimatorArgs$gamma <- gamma
+  } else {
+    # Look at the call if someone also used "binary.data":
+    mc <- match.call()
+    if ("binary.data" %in% names(mc)){
+      if (verbose) message("Note: Both 'estimator' and 'binary.data' arguments used: only the 'estimator' will be used ('binary.data' will be ignored)")
+    }
+  }
+  
+  
+  
+  if (progressbar==TRUE) pb <- txtProgressBar(max=it, style = 3)
+  x1 <- data1
+  x2 <- data2
   nobs1 <- nrow(x1)
   nobs2 <- nrow(x2)
   dataall <- rbind(x1,x2)
@@ -27,221 +131,433 @@ NCT <- function(data1,
   b <- 1:(nobs1+nobs2)
   nvars <- ncol(x1)
   nedges <- nvars*(nvars-1)/2
+  
   glstrinv.perm <- glstrinv.real <- nwinv.real <- nwinv.perm <- c()
-  diffedges.perm <- matrix(0, it, nedges)
-  diffedges.permtemp <- matrix(0, nvars, nvars)
-  einv.perm.all <- array(0, dim = c(nvars, nvars, it))
-  edges.pval.HBall <- matrix(0, nvars, nvars)
-  edges.pvalmattemp <- matrix(0, nvars, nvars)
-  cen.pvalmattemp <- matrix(0, nvars, 4)
+  diffedges.perm <- matrix(0,it,nedges) 
+  einv.perm.all <- array(NA,dim=c(nvars, nvars, it))
+  corrpvals.all <- matrix(NA,nvars,nvars)
+  edges.pvalmattemp <- matrix(0,nvars,nvars)
   
-  if(!is.null(colnames(data1))){
-    nodenames <- colnames(data1)
-  } else{
-    nodenames <- 1:(dim(data1)[2])
-  }
+  #####################################
+  ###    procedure for all data     ###
+  #####################################
   
-  ## Centrality
-  if(missing(nodes)){
-    nodes <- "all"
-  }
-  if(nodes=="all"){
-    nnodes <- nvars
-  } else {
-    nodes<- unlist(nodes)
-    nnodes <- length(nodes)
-  } 
-  centrality_global <- match.arg(centrality_global)
-  centrality_node <- match.arg(centrality_node)
-  gl.str <- switch(centrality_global,
-                   Strength = function(x){
-                     return(abs(sum(abs(x[upper.tri(x)]))))
-                   } ,
-                   ExpectedInfluence = function(x){
-                     return(sum(x[upper.tri(x)]))
-                   } )
-  diffcen.perm <- matrix(NA, it, nnodes*length(centrality_node))
-
-  ## Determine which function to use 
-  if(match.arg(estimation_method)=="association"){
-    fun <- cor
-  } else if(match.arg(estimation_method)=="concentration"){
-    fun <- function(x){
-      ppcor::pcor(x)$estimate
-    }
-  } else if(match.arg(estimation_method)=="EBICglasso"){
-    fun <- function(x){
-      return(qgraph::EBICglasso(cor(x), n=dim(x)[1]))
-    }
-  } else if(match.arg(estimation_method)=="IsingFit"){
-    fun <- function(x){
-      return(IsingFit::IsingFit(x, progressbar=FALSE, plot=F)$weiadj)
-    }
-  } else if(match.arg(estimation_method)=="custom"){
-    fun <- custom_estimation_method
-  }
+  # Estimate the networks:
+  nw1 <- do.call(estimator,c(list(x1),estimatorArgs))
+  if (is.list(nw1)) nw1 <- nw1$graph
   
-  ## Run the permutation
-    nw1 <- fun(x1)
-    nw2 <- fun(x2)
-    if (weighted == FALSE) {
-      nw1 = (nw1 != 0) * 1
-      nw2 = (nw2 != 0) * 1
+  nw2 <- do.call(estimator,c(list(x2),estimatorArgs))
+  if (is.list(nw2)) nw2 <- nw2$graph
+  
+  if(weighted==FALSE){
+    nw1=(nw1!=0)*1
+    nw2=(nw2!=0)*1
+  }
+  ##### Invariance measures #####
+  
+  ## Global strength invariance
+  glstrinv.real <- abs(sum(abs(nw1[upper.tri(nw1)]))-sum(abs(nw2[upper.tri(nw2)])))
+  # global strength of individual networks
+  glstrinv.sep <- c(sum(abs(nw1[upper.tri(nw1)])), sum(abs(nw2[upper.tri(nw2)])))
+  
+  ## Individual edge invariance
+  diffedges.real <- abs(nw1-nw2)[upper.tri(abs(nw1-nw2))] 
+  diffedges.realmat <- matrix(diffedges.real,it,nedges,byrow=TRUE)
+  diffedges.realoutput <- abs(nw1-nw2)
+  
+  ## Network structure invariance
+  nwinv.real <- max(diffedges.real)
+  
+  
+  #####################################
+  #####     Start permutations    #####
+  #####################################
+  for (i in 1:it)
+  {
+    diffedges.permtemp <- matrix(0, nvars, nvars)
+    
+    # If not paired data
+    if(paired==FALSE)
+    {
+      s <- sample(1:(nobs1+nobs2),nobs1,replace=FALSE)
+      x1perm <- dataall[s,]
+      x2perm <- dataall[b[-s],]
+      
+      
+      # Estimate the networks:
+      r1perm <- do.call(estimator,c(list(x1perm),estimatorArgs))
+      if (is.list(r1perm)) r1perm <- r1perm$graph
+      
+      r2perm <- do.call(estimator,c(list(x2perm),estimatorArgs))
+      if (is.list(r2perm)) r2perm <- r2perm$graph
+      
+      if(weighted==FALSE){
+        r1perm=(r1perm!=0)*1
+        r2perm=(r2perm!=0)*1
+      }
     }
     
-    glstrinv.real <- gl.str(nw1) - gl.str(nw2)
-    glstrinv.sep <- c(gl.str(nw1), gl.str(nw2))
-    diffedges.real <- abs(nw1 - nw2)[upper.tri(abs(nw1 - 
-                                                     nw2))]
-    diffedges.realmat <- matrix(diffedges.real, it, nedges, 
-                                byrow = TRUE)
-    diffedges.realoutput <- abs(nw1 - nw2)
-    nwinv.real <- max(diffedges.real)
-    if(test_centrality_node==TRUE){
-      cen1 <- centrality_auto(nw1)$node.centrality
-      cen2 <- centrality_auto(nw2)$node.centrality
-      cen1$ExpectedInfluence <- networktools::expectedInf(nw1)$step1
-      cen2$ExpectedInfluence <- networktools::expectedInf(nw2)$step1
-      diffcen.real <- as.matrix(cen1) - as.matrix(cen2)
-    }
-    for (i in 1:it) {
-      if (paired == FALSE) {
-        s <- sample(1:(nobs1 + nobs2), nobs1, replace = FALSE)
-        x1perm <- dataall[s, ]
-        x2perm <- dataall[b[-s], ]
-        r1perm <- fun(x1perm)
-        r2perm <- fun(x2perm)
-        if (weighted == FALSE) {
-          r1perm = (r1perm != 0) * 1
-          r2perm = (r2perm != 0) * 1
-        }
+    # If paired data
+    if(paired==TRUE)
+    {
+      if (verbose) message("Note: NCT for dependent data has not been validated.")
+      s <- sample(c(1,2),nobs1,replace=TRUE)
+      x1perm <- x1[s==1,]
+      x1perm <- rbind(x1perm,x2[s==2,])
+      x2perm <- x2[s==1,]
+      x2perm <- rbind(x2perm,x1[s==2,])
+      
+      
+      # Estimate the networks:
+      r1perm <- do.call(estimator,c(list(x1perm),estimatorArgs))
+      if (is.list(r1perm)) r1perm <- r1perm$graph
+      
+      r2perm <- do.call(estimator,c(list(x2perm),estimatorArgs))
+      if (is.list(r2perm)) r2perm <- r2perm$graph
+      
+      if(weighted==FALSE){
+        r1perm=(r1perm!=0)*1
+        r2perm=(r2perm!=0)*1
       }
-      if (paired == TRUE) {
-        s <- sample(c(1, 2), nobs1, replace = TRUE)
-        x1perm <- x1[s == 1, ]
-        x1perm <- rbind(x1perm, x2[s == 2, ])
-        x2perm <- x2[s == 1, ]
-        x2perm <- rbind(x2perm, x1[s == 2, ])
-        r1perm <- fun(x1perm)
-        r2perm <- fun(x2perm)
-        if (weighted == FALSE) {
-          r1perm = (r1perm != 0) * 1
-          r2perm = (r2perm != 0) * 1
-        }
-      }
-      glstrinv.perm[i] <- gl.str(r1perm) - gl.str(r2perm) 
-      diffedges.perm[i, ] <- abs(r1perm - r2perm)[upper.tri(abs(r1perm - 
-                                                                  r2perm))]
-      diffedges.permtemp <- matrix(0, nvars, nvars)
-      diffedges.permtemp[upper.tri(diffedges.permtemp, diag = FALSE)] <- diffedges.perm[i, ]
-      diffedges.permtemp <- diffedges.permtemp + t(diffedges.permtemp)
-      einv.perm.all[, , i] <- diffedges.permtemp
-      nwinv.perm[i] <- max(diffedges.perm[i, ])
-      if(test_centrality_node==TRUE){
-        cen1permtemp <- centrality_auto(r1perm)$node.centrality
-        cen2permtemp <- centrality_auto(r2perm)$node.centrality
-        cen1permtemp$ExpectedInfluence <- networktools::expectedInf(r1perm)$step1
-        cen2permtemp$ExpectedInfluence <- networktools::expectedInf(r2perm)$step1
-        diffcen.permtemp <- as.matrix(cen1permtemp) - as.matrix(cen2permtemp)
-        if(nodes=="all"){
-          diffcen.perm[i,] <- melt(diffcen.permtemp[,centrality_node])$value
-        } else {
-          diffcen.perm[i,] <- melt(diffcen.permtemp[nodes,centrality_node])$value
-        } 
-      }
-      if (progressbar == TRUE) 
-        setTxtProgressBar(pb, i)
     }
     
-    if (test_edges == TRUE) {
-      if(missing(edges)){
-        edges <- "all"
-      }
-      edges.pvaltemp <- colSums(diffedges.perm >= diffedges.realmat)/it
-      edges.pvalmattemp[upper.tri(edges.pvalmattemp, diag = FALSE)] <- edges.pvaltemp
+    ## Invariance measures for permuted data
+    glstrinv.perm[i] <- abs(sum(abs(r1perm[upper.tri(r1perm)]))-sum(abs(r2perm[upper.tri(r2perm)])))
+    diffedges.perm[i,] <- abs(r1perm-r2perm)[upper.tri(abs(r1perm-r2perm))]
+    diffedges.permtemp[upper.tri(diffedges.permtemp, diag=FALSE)] <- diffedges.perm[i,]
+    diffedges.permtemp <- diffedges.permtemp + t(diffedges.permtemp)
+    einv.perm.all[,,i] <- diffedges.permtemp
+    nwinv.perm[i] <- max(diffedges.perm[i,])
+    
+    if (progressbar==TRUE) setTxtProgressBar(pb, i)
+  }
+  #####################################
+  #####      End permutations     #####
+  #####################################
+  
+  
+  #####################################
+  #####     Calculate p-values    #####
+  #####################################
+  if(test.edges==TRUE)
+  {
+    # vector with uncorrected p values
+    edges.pvaltemp <- colSums(diffedges.perm >= diffedges.realmat)/it 
+    
+    ## If all edges should be tested
+    if(is.character(edges))
+    {
+      # corrected p-values (or not if p.adjust.methods='none')
+      corrpvals.all.temp <- round(p.adjust(edges.pvaltemp, method=p.adjust.methods),3)
+      # matrix with corrected p values
+      corrpvals.all
+      corrpvals.all[upper.tri(corrpvals.all,diag=FALSE)] <- corrpvals.all.temp 
+      rownames(corrpvals.all) <- colnames(corrpvals.all) <- colnames(x1)
+      einv.pvals <- melt(corrpvals.all, na.rm=TRUE, value.name = 'p-value')
+      einv.perm <- einv.perm.all
+      einv.real <- diffedges.realoutput
+    }
+    
+    ## If a selection of edges should be tested
+    if(is.list(edges))
+    {
+      einv.perm <- matrix(NA,it,length(edges))
+      colnames(einv.perm) <- edges
+      uncorrpvals <- einv.real <- pairs <- c()
+      
+      # matrix with uncorrected p values
+      edges.pvalmattemp[upper.tri(edges.pvalmattemp,diag=FALSE)] <- edges.pvaltemp
       edges.pvalmattemp <- edges.pvalmattemp + t(edges.pvalmattemp)
-      rownames(edges.pvalmattemp) <- colnames(edges.pvalmattemp) <- nodenames
-      rownames(diffedges.realoutput) <- colnames(diffedges.realoutput) <- nodenames
-      rownames(einv.perm.all) <- colnames(einv.perm.all) <- nodenames
-      ## is.character - purpose is to check if edges == "all"
-      if (is.character(edges)) {
-        if(p_adjust_methods[1]=="none"){
-          ept.HBall <- edges.pvaltemp
-        } else {ept.HBall <- p.adjust(edges.pvaltemp, method = p_adjust_methods[1])}
-        edges.pval.HBall[upper.tri(edges.pval.HBall, 
-                                   diag = FALSE)] <- ept.HBall
-        edges.pval.HBall <- edges.pval.HBall + t(edges.pval.HBall)
-        colnames(edges.pval.HBall) <- rownames(edges.pval.HBall) <- nodenames
-        einv.pvals <- melt(edges.pval.HBall, na.rm = TRUE, 
-                           value.name = "p-value")
-        einv.perm <- einv.perm.all
-        einv.real <- diffedges.realoutput
-        edges.tested <- "all"
-      }
-      if (is.list(edges)) {
-        einv.perm <- matrix(NA, it, length(edges))
-        colnames(einv.perm) <- edges
-        uncorrpvals <- einv.real <- vector()
-        for (j in 1:length(edges)) {
-          uncorrpvals[j] <- edges.pvalmattemp[edges[[j]][1], 
-                                              edges[[j]][2]]
-          einv.real[j] <- diffedges.realoutput[edges[[j]][1], 
-                                               edges[[j]][2]]
-          for (l in 1:it) {
-            einv.perm[l, j] <- einv.perm.all[, , l][edges[[j]][1], 
-                                                    edges[[j]][2]]
-          }
+      
+      for(j in 1:length(edges))
+      {
+        pairs <- rbind(pairs, c(colnames(x1)[edges[[j]][1]], colnames(x1)[edges[[j]][2]]))
+        uncorrpvals[j] <- edges.pvalmattemp[edges[[j]][1],edges[[j]][2]]
+        einv.real[j] <- diffedges.realoutput[edges[[j]][1],edges[[j]][2]]
+        for(l in 1:it){
+          einv.perm[l,j] <- einv.perm.all[,,l][edges[[j]][1],edges[[j]][2]]
         }
-        if(p_adjust_methods[1]=="none"){
-          HBcorrpvals <- uncorrpvals
-        } else {HBcorrpvals <- p.adjust(uncorrpvals, method = p_adjust_methods[1])}
-        einv.pvals <- HBcorrpvals
-        edges.tested <- colnames(einv.perm)
       }
-
+      corrpvals <- p.adjust(uncorrpvals, method=p.adjust.methods)
+      corrpvals_mat <- matrix(NA,length(edges),3)
+      corrpvals_mat[,3] <- corrpvals
+      corrpvals_mat[,1:2] <- pairs
+      einv.pvals <- as.data.frame(corrpvals_mat)
+      colnames(einv.pvals) <- c('Var1', 'Var2', 'p-value')
     }
-    if(test_centrality_node==TRUE){
-      if(nodes=="all"){
-        diffcen.real.vec <- melt(diffcen.real[,centrality_node])$value
-        nnodes <- nvars
-      } else {
-        diffcen.real.vec <- melt(diffcen.real[nodes,centrality_node])$value
-        nnodes <- length(nodes)
-      } 
-      diffcen.realmat <- matrix(diffcen.real.vec, it, nnodes, 
-                                  byrow = TRUE)
-      diffcen.pvaltemp <- colSums(abs(diffcen.perm) >= abs(diffcen.realmat))/it
-      if(p_adjust_methods[1]=="none"){
-        diffcen.HBall <- diffcen.pvaltemp
-      } else {diffcen.HBall <- p.adjust(diffcen.pvaltemp, method = p_adjust_methods[1])}
-      diffcen.pval <- matrix(diffcen.HBall, nnodes, length(centrality_node))
-      colnames(diffcen.pval) <- centrality_node
-      if(nodes=="all"){
-        rownames(diffcen.pval) <- rownames(diffcen.real)
-      } else {rownames(diffcen.pval) <- nodes}
-    }
-    if (progressbar == TRUE) 
-      close(pb)
-      res <- list(glstrinv.real = glstrinv.real, glstrinv.sep = glstrinv.sep, 
-                  glstrinv.pval = sum(abs(glstrinv.perm) >= abs(glstrinv.real))/it, 
-                  glstrinv.perm = glstrinv.perm, nwinv.real = nwinv.real, 
-                  nwinv.pval = sum(nwinv.perm >= nwinv.real)/it, 
-                  nwinv.perm = nwinv.perm, method="permute", centrality_global=match.arg(centrality_global),
-                  estimation_method=match.arg(estimation_method))
-    if(test_edges == TRUE){
-      res[["edges.tested"]] <- edges.tested
-      res[["einv.real"]] <- einv.real
-      res[["einv.pvals"]] <- einv.pvals
-      res[["einv.perm"]] <- einv.perm
-    }
-    if(test_centrality_node==TRUE){
-      res[["diffcen.real"]] <- matrix(diffcen.real.vec, nrow=nnodes,ncol=1, 
-                                      dimnames=list(rownames(diffcen.pval), match.arg(centrality_node)))
-      res[["diffcen.perm"]] <- diffcen.perm
-      res[["diffcen.pval"]] <- diffcen.pval
-    }
+    
+    edges.tested <- colnames(einv.perm)
+    
+    res <- list(glstrinv.real = glstrinv.real,
+                glstrinv.sep = glstrinv.sep,
+                glstrinv.pval = sum(glstrinv.perm >= glstrinv.real)/it, 
+                glstrinv.perm = glstrinv.perm,
+                nwinv.real = nwinv.real,
+                nwinv.pval = sum(nwinv.perm >= nwinv.real)/it, 
+                nwinv.perm = nwinv.perm,
+                edges.tested = edges.tested,
+                einv.real = einv.real,
+                einv.pvals = einv.pvals,
+                einv.perm = einv.perm, 
+                nw1 = nw1,
+                nw2 = nw2)
+  }
+  
+  if (progressbar==TRUE) close(pb)
+  
+  if(test.edges==FALSE) 
+  {
+    res <- list(
+      glstrinv.real = glstrinv.real, 
+      glstrinv.sep = glstrinv.sep,
+      glstrinv.pval = sum(glstrinv.perm >= glstrinv.real)/it, 
+      glstrinv.perm = glstrinv.perm,
+      nwinv.real = nwinv.real,
+      nwinv.pval = sum(nwinv.perm >= nwinv.real)/it,
+      nwinv.perm = nwinv.perm, 
+      nw1 = nw1,
+      nw2 = nw2
+    )
+  }
+  
+  # }
+  
+  # This is no obsolete (handled in section above)
+  # 
+  #   #################################
+  #   ### procedure for binary data ###
+  #   #################################
+  #   ## Real data
+  #   if(binary.data==TRUE) 
+  #   {
+  #     IF1 <- IsingFit(x1, AND = AND, gamma=gamma, plot=FALSE, progressbar=FALSE)
+  #     IF2 <- IsingFit(x2, AND = AND, gamma=gamma, plot=FALSE, progressbar=FALSE)
+  #     nw1 <- IF1$weiadj
+  #     nw2 <- IF2$weiadj
+  #     if(weighted==FALSE){
+  #       nw1=(nw1!=0)*1
+  #       nw2=(nw2!=0)*1
+  #     }
+  #     
+  #     ##### Invariance measures #####
+  #     
+  #     ## Global strength invariance
+  #     glstrinv.real <- abs(sum(abs(nw1[upper.tri(nw1)]))-sum(abs(nw2[upper.tri(nw2)])))
+  #     # global strength of individual networks
+  #     glstrinv.sep <- c(sum(abs(nw1[upper.tri(nw1)])), sum(abs(nw2[upper.tri(nw2)])))
+  #     
+  #     ## Individual edge invariance
+  #     diffedges.real <- abs(nw1-nw2)[upper.tri(abs(nw1-nw2))] 
+  #     diffedges.realmat <- matrix(diffedges.real,it,nedges,byrow=TRUE)
+  #     diffedges.realoutput <- abs(nw1-nw2)
+  #     
+  #     ## Network structure invariance
+  #     nwinv.real <- max(diffedges.real)
+  #     
+  #     #####################################
+  #     #####     Start permutations    #####
+  #     #####################################
+  #     for (i in 1:it)
+  #     {
+  #       diffedges.permtemp <- matrix(0, nvars, nvars)
+  #       if(paired==FALSE)
+  #       {
+  #         # a check to prevent an error of lognet(): a variable with only one 0 or 1 is not allowed
+  #         checkN=0
+  #         while(checkN==0){
+  #           s <- sample(1:(nobs1+nobs2),nobs1,replace=FALSE)
+  #           x1perm <- dataall[s,]
+  #           x2perm <- dataall[b[-s],]
+  #           
+  #           cm1 <- colMeans(x1perm)
+  #           cm2 <- colMeans(x2perm)
+  #           checkN=ifelse(any(cm1<(1/nobs1))|any(cm1>(nobs1-1)/nobs1)|any(cm2<(1/nobs2))|any(cm2>(nobs2-1)/nobs2),0,1) 
+  #         }
+  #         IF1perm <- IsingFit(x1perm,AND = AND, gamma=gamma,plot=FALSE,progressbar=FALSE)
+  #         IF2perm <- IsingFit(x2perm,AND = AND, gamma=gamma,plot=FALSE,progressbar=FALSE)
+  #         r1perm <- IF1perm$weiadj
+  #         r2perm <- IF2perm$weiadj
+  #         if(weighted==FALSE){
+  #           r1perm=(r1perm!=0)*1
+  #           r2perm=(r2perm!=0)*1
+  #         }
+  #       }
+  #       
+  #       if(paired==TRUE)
+  #       {
+  #         checkN=0
+  #         while(checkN==0)
+  #         {
+  #           s <- sample(c(1,2),nobs1,replace=TRUE)
+  #           x1perm <- x1[s==1,]
+  #           x1perm <- rbind(x1perm,x2[s==2,])
+  #           x2perm <- x2[s==1,]
+  #           x2perm <- rbind(x2perm,x1[s==2,])
+  #           
+  #           cm1 <- colMeans(x1perm)
+  #           cm2 <- colMeans(x2perm)
+  #           checkN=ifelse(any(cm1<(1/nobs1))|any(cm1>(nobs1-1)/nobs1)|any(cm2<(1/nobs2))|any(cm2>(nobs2-1)/nobs2),0,1) 
+  #         }
+  #         
+  #         IF1perm <- IsingFit(x1perm,AND = AND, gamma=gamma,plot=FALSE,progressbar=FALSE)
+  #         IF2perm <- IsingFit(x2perm,AND = AND, gamma=gamma,plot=FALSE,progressbar=FALSE)
+  #         r1perm <- IF1perm$weiadj
+  #         r2perm <- IF2perm$weiadj
+  #         if(weighted==FALSE)
+  #         {
+  #           r1perm=(r1perm!=0)*1
+  #           r2perm=(r2perm!=0)*1
+  #         }
+  #       }
+  #       
+  #       ## Invariance measures for permuted data
+  #       glstrinv.perm[i] <- abs(sum(abs(r1perm[upper.tri(r1perm)]))-sum(abs(r2perm[upper.tri(r2perm)])))
+  #       diffedges.perm[i,] <- abs(r1perm-r2perm)[upper.tri(abs(r1perm-r2perm))]
+  #       diffedges.permtemp[upper.tri(diffedges.permtemp, diag=FALSE)] <- diffedges.perm[i,]
+  #       diffedges.permtemp <- diffedges.permtemp + t(diffedges.permtemp)
+  #       einv.perm.all[,,i] <- diffedges.permtemp
+  #       nwinv.perm[i] <- max(diffedges.perm[i,])
+  #       
+  #       if (progressbar==TRUE) setTxtProgressBar(pb, i)
+  #     }
+  #     #####################################
+  #     #####      End permutations     #####
+  #     #####################################
+  #     
+  #     
+  #     #####################################
+  #     #####     Calculate p-values    #####
+  #     #####################################
+  #     if(test.edges==TRUE)
+  #     {
+  #       # vector with uncorrected p values
+  #       edges.pvaltemp <- colSums(diffedges.perm >= diffedges.realmat)/it 
+  #       # # matrix with uncorrected p values
+  #       edges.pvalmattemp[upper.tri(edges.pvalmattemp,diag=FALSE)] <- edges.pvaltemp
+  #       edges.pvalmattemp <- edges.pvalmattemp + t(edges.pvalmattemp)
+  #       
+  #       ## If all edges should be tested
+  #       if(is.character(edges))
+  #       {
+  #         # corrected p-values (or not if p.adjust.methods='none')
+  #         corrpvals.all.temp <- round(p.adjust(edges.pvaltemp, method=p.adjust.methods),3)
+  #         # matrix with corrected p values
+  #         corrpvals.all[upper.tri(corrpvals.all,diag=FALSE)] <- corrpvals.all.temp 
+  #         rownames(corrpvals.all) <- colnames(corrpvals.all) <- colnames(x1)
+  #         einv.pvals <- melt(corrpvals.all, na.rm=TRUE, value.name = 'p-value')
+  #         einv.perm <- einv.perm.all
+  #         einv.real <- diffedges.realoutput
+  #       }
+  #       
+  #       ## If a selection of edges should be tested
+  #       if(is.list(edges))
+  #       {
+  #         einv.perm <- matrix(NA,it,length(edges))
+  #         colnames(einv.perm) <- edges
+  #         uncorrpvals <- einv.real <- pairs <- c()
+  #         for(j in 1:length(edges))
+  #         {
+  #           pairs <- rbind(pairs, c(colnames(x1)[edges[[j]][1]], colnames(x1)[edges[[j]][2]]))
+  #           uncorrpvals[j] <- edges.pvalmattemp[edges[[j]][1],edges[[j]][2]]
+  #           einv.real[j] <- diffedges.realoutput[edges[[j]][1],edges[[j]][2]]
+  #           for(l in 1:it){
+  #             einv.perm[l,j] <- einv.perm.all[,,l][edges[[j]][1],edges[[j]][2]]
+  #           }
+  #         }
+  #         corrpvals <- p.adjust(uncorrpvals, method=p.adjust.methods)
+  #         corrpvals_mat <- matrix(NA,length(edges),3)
+  #         corrpvals_mat[,3] <- corrpvals
+  #         
+  #         corrpvals_mat[,1:2] <- pairs
+  #         einv.pvals <- as.data.frame(corrpvals_mat)
+  #         colnames(einv.pvals) <- c('Var1', 'Var2', 'p-value')
+  #       }
+  #       
+  #       edges.tested <- colnames(einv.perm)
+  #       
+  #       res <- list(nw1 = nw1,
+  #                   nw2 = nw2,
+  #                   glstrinv.real = glstrinv.real,
+  #                   glstrinv.sep = glstrinv.sep,
+  #                   glstrinv.pval = sum(glstrinv.perm >= glstrinv.real)/it, 
+  #                   glstrinv.perm = glstrinv.perm,
+  #                   nwinv.real = nwinv.real,
+  #                   nwinv.pval = sum(nwinv.perm >= nwinv.real)/it, 
+  #                   nwinv.perm = nwinv.perm,
+  #                   edges.tested = edges.tested,
+  #                   einv.real = einv.real,
+  #                   einv.pvals = einv.pvals,
+  #                   einv.perm = einv.perm)
+  #     }
+  #     
+  #     
+  #     if (progressbar==TRUE) close(pb)
+  #     
+  #     if(test.edges==FALSE) 
+  #     {
+  #       res <- list(nw1 = nw1,
+  #                   nw2 = nw2,
+  #                   glstrinv.real = glstrinv.real, 
+  #                   glstrinv.sep = glstrinv.sep,
+  #                   glstrinv.pval = sum(glstrinv.perm >= glstrinv.real)/it,
+  #                   glstrinv.perm = glstrinv.perm,
+  #                   nwinv.real = nwinv.real,
+  #                   nwinv.pval = sum(nwinv.perm >= nwinv.real)/it,
+  #                   nwinv.perm = nwinv.perm
+  #       )
+  #     }
+  #   }
+  
   class(res) <- "NCT"
   return(res)
-  message("This is the development version of NCT. Association networks and global expected influence are used by default")
 }
 
+
+## Methods:
+
+summary.NCT <- function(x,...){
+  
+  cat("\n NETWORK INVARIANCE TEST
+      Test statistic M: ", x$nwinv.real,
+      "\n p-value", x$nwinv.pval,
+      "\n\n GLOBAL STRENGTH INVARIANCE TEST
+      Global strength per group: ", x$glstrinv.sep,
+      "\n Test statistic S: ", x$glstrinv.real,
+      "\n p-value", x$glstrinv.pval,
+      "\n\n EDGE INVARIANCE TEST
+      Edges tested: ", x$edges.tested,
+      "\n Test statistic E: ", x$einv.real,
+      "\n p-value", x$einv.pvals
+  )
+  
+}
+
+plot.NCT <- function(x,what = c("strength","network","edge"),...){
+  
+  what <- match.arg(what)
+  
+  ## Plot results of global strength invariance test (not reliable with only 10 permutations!):
+  if (what == "strength"){
+    hist(x$glstrinv.perm, main=paste('p =',x$glstrinv.pval),xlab='Difference in global strength',xlim=c(0,max(x$glstrinv.real,x$glstrinv.perm)))
+    points(x$glstrinv.real,0,col='red',pch=17)
+  } 
+  
+  if (what == "network"){
+    
+    ## Plot results of the network invariance test (not reliable with only 10 permutations!):
+    hist(x$nwinv.perm, main=paste('p =',x$nwinv.pval),xlab='Maximum of difference',xlim=c(0,max(x$nwinv.real,x$nwinv.perm)))
+    points(x$nwinv.real,0,col='red',pch=17)
+  } 
+  
+  if (what == "edge"){
+    
+    ## Plot results of the maximum difference in edge weights (not reliable with only 10 permutations)
+    nedgetests <- ncol(x$einv.perm)
+    for(i in 1:nedgetests){
+      hist(x$einv.perm[,i], main=paste('p =',x$einv.pval[i,3]),xlab=paste('Difference in edge strength ', colnames(x$einv.perm)[i]),xlim=c(0,max(x$einv.real,x$einv.perm)))
+      points(x$einv.real[i],0,col='red',pch=17)
+    }
+    
+  } #else stop("Method not implemented yet.")
+  
+}
