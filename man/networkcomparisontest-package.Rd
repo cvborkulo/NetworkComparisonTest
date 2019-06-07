@@ -11,8 +11,7 @@ This permutation based hypothesis test, suited for gaussian and binary data, ass
 \tabular{ll}{
 Package: \tab NetworkComparisonTest\cr
 Type: \tab Package\cr
-Version: \tab 2.1.1\cr
-Date: \tab 2018-05-12\cr
+Version: \tab 2.1.2\cr
 License: \tab GPL-2\cr
 }
 }
