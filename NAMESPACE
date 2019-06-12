@@ -10,6 +10,6 @@ importFrom("graphics", "hist", "points")
 importFrom("stats", "cor", "p.adjust")
 importFrom("utils", "setTxtProgressBar", "txtProgressBar")
 importFrom("Matrix", "nearPD")
-
+importFrom("reshape2","melt")
 
 importFrom("methods", "is")
