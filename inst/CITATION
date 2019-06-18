@@ -1,0 +1,19 @@
+citHeader("To cite NCT in publications use:")
+
+citEntry(entry = "Article",
+  title        = "Comparing network structures on three aspects: A permutation test",
+  author       = personList(as.person("Claudia D. van Borkulo"),
+                   as.person("Lynn Boschloo"),
+                   as.person("Jolanda J. Kossakowski"),
+                   as.person("Pia Tio"),
+                   as.person("Robert A. Schoevers"),
+                   as.person("Denny Borsboom"),
+                   as.person("Lourens J. Waldorp")),
+  journal      = "Journal of Statistical Software",
+  year         = "2017",
+  doi          = "10.13140/RG. 2.2. 29455.38569",
+  textVersion  =
+  paste("Claudia D. van Borkulo, Lynn Boschloo, Jolanda J. Kossakowski, Pia Tio, Robert A. Schoevers, Denny Borsboom, Lourens J. Waldorp (2017).",
+        "Comparing network structures on three aspects: A permutation test.",
+        "doi 10.13140/RG. 2.2. 29455.38569.")
+)
