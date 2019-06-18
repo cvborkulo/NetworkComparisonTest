@@ -4,7 +4,9 @@ NCT_estimator_Ising <- function(x, gamma = 0.25, AND = TRUE){
   IF$weiadj
 }
 
-NCT_estimator_GGM <- function(x, make.positive.definite = TRUE, gamma = 0.5, corMethod = c("cor","cor_auto")){
+
+NCT_estimator_GGM <- function(x, make.positive.definite = TRUE, gamma = 0.5, corMethod = c("cor","cor_auto"), verbose=FALSE){
+
   corMethod <- match.arg(corMethod)
   
   if (corMethod == "cor"){
@@ -19,7 +21,12 @@ NCT_estimator_GGM <- function(x, make.positive.definite = TRUE, gamma = 0.5, cor
     cor_x <- (cor_x + t(cor_x)) / 2 # make symmetric
   }
   
-  nw <- EBICglasso(cor_x,nrow(x),gamma=gamma)
+
+  if(verbose){
+    nw <- EBICglasso(cor_x,nrow(x),gamma=gamma)
+  } else {
+    nw <- suppressWarnings(suppressMessages(EBICglasso(cor_x,nrow(x),gamma=gamma)))
+  }
   
   return(nw)
 }

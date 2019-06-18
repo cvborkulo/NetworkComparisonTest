@@ -8,13 +8,18 @@ Statistical Comparison of Two Networks Based on Three Invariance Measures
 This permutation based hypothesis test, suited for gaussian and binary data, assesses the difference between two networks based on several invariance measures (network structure invariance, global strength invariance, edge invariance). Network structures are estimated with l1-regularized partial correlations (gaussian data) or with l1-regularized logistic regression (eLasso, binary data). Suited for comparison of independent and dependent samples. For dependent samples, only supported for data of one group which is measured twice.
 }
 \usage{
-NCT(data1, data2, gamma, it = 100, binary.data = FALSE,
-    paired = FALSE, weighted = TRUE, AND = TRUE,
-    test.edges = FALSE, edges, progressbar = TRUE,
-    make.positive.definite = TRUE, p.adjust.methods =
-    c("none", "holm", "hochberg", "hommel", "bonferroni",
-    "BH", "BY", "fdr"), estimator, estimatorArgs = list(),
-    verbose = TRUE)
+NCT(data1, data2, 
+      gamma, it = 100, binary.data=FALSE, 
+      paired=FALSE, weighted=TRUE, AND=TRUE, abs=TRUE,
+      test.edges=FALSE, edges="all", 
+      progressbar=TRUE, make.positive.definite=TRUE,
+      p.adjust.methods= c("none","holm","hochberg","hommel",
+                          "bonferroni","BH","BY","fdr"), 
+      test.centrality=FALSE, 
+      centrality=c("strength","expectedInfluence"),nodes="all",
+      communities=NULL,useCommunities="all",
+      estimator, estimatorArgs = list(), 
+      verbose = TRUE)
 }
 
 \arguments{
@@ -42,6 +47,9 @@ Logical. Can be TRUE of FALSE to indicate whether the networks to be compared sh
   \item{AND}{
 Logical. Can be TRUE of FALSE to indicate whether the AND-rule or the OR-rule should be used to define the edges in the network. Defaults to TRUE. Only necessary for binary data.
 }
+  \item{abs}{
+Logical. Should global strength consider the absolute value of edge weights, or the raw value (i.e., global expected influence)?
+}
   \item{test.edges}{
 Logical. Can be TRUE of FALSE to indicate whether or not differences in individual edges should be tested.
 }
@@ -56,6 +64,23 @@ If \code{make.positive.definite = TRUE}, the covariance matrices used for the gl
 }
   \item{p.adjust.methods}{
 Character. Can be one of "holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr", or "none". To control (or not) for testing of multiple edges. Defaults to "none".
+}
+  \item{test.centrality}{
+Logical. Should centrality metrics be compared across networks?
+}
+  \item{centrality}{
+Type of centrality metrics to test. Can be any of c("all", "closeness", "betweenness", 
+                       "strength", "expectedInfluence", "bridgeStrength", 
+                       "bridgeCloseness", "bridgeBetweenness", "bridgeExpectedInfluence")
+}
+  \item{nodes}{
+Specific nodes for centrality tests. Can be character names or index numbers. Only used if test.centrality=TRUE
+}
+  \item{communities}{
+Passed to bridge() if computing bridge centrality
+}
+  \item{useCommunities}{
+Passed to bridge() if computing bridge centrality
 }
   \item{estimator}{
 A function that takes data as input and returns a network structure. This can be used for custom estimation algorithms. Note, supplying this function will overwrite the arguments \code{binary.data}, \code{AND}, \code{gamma} and \code{make.positive.definite}.
@@ -82,6 +107,9 @@ NCT returns a 'NCT' object that contains the following items:
 \item{edges.tested}{The pairs of variables between which the edges are called to be tested. Only if test.edges = TRUE.}
 \item{einv.real}{The value of the difference in edge weight of the observed networks (multiple values if more edges are called to test). Only if test.edges = TRUE.}
 \item{einv.perm}{The values of the difference in edge weight of the permuted networks. Only if test.edges = TRUE.}
+\item{diffcen.real}{The values of the difference in centralities of the observed networks. Only if test.centrality = TRUE.}
+\item{diffcen.perm}{The values of the difference in centralities of the permuted networks. Only if test.centrality = TRUE.}
+\item{diffcen.pval}{p-values(corrected for multiple testing or not according to 'p.adjust.methods') per node from the permutation test concerning differences in centralities. Only if test.centrality = TRUE.}
 }
 
 \references{

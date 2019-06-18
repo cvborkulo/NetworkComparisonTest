@@ -14,6 +14,8 @@ Imports:
     utils,
     Matrix,
     methods
+Suggests:
+    networktools
 Description: This permutation based hypothesis test, suited for Gaussian and
     binary data, assesses the difference between two networks based on several
     invariance measures (network structure invariance, global strength invariance,
@@ -22,4 +24,4 @@ Description: This permutation based hypothesis test, suited for Gaussian and
     binary data). Suited for comparison of independent and dependent samples
     (currently, only for one group measured twice).
 License: GPL-2
-RoxygenNote: 5.0.1
+RoxygenNote: 6.1.1
