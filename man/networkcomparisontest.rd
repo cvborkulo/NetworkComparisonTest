@@ -122,7 +122,7 @@ van Borkulo, C. D., Boschloo, L., Borsboom, D., Penninx, B. W. J. H., Waldorp, L
 van Borkulo, C. D., Boschloo, Kossakowski, J., Tio, P., L., Schoevers, R.A., Borsboom, D., & , Waldorp, L. J. (2016). Comparing network structures on three aspects: A permutation test. doi:10.13140/RG.2.2.29455.38569
 }
 \author{
-Claudia D. van Borkulo, with contributions from Jonas Haslbeck, Sacha Epskamp and Alex Millner
+Claudia D. van Borkulo, with contributions from Jonas Haslbeck, Sacha Epskamp, Payton Jones and Alex Millner
 
 Maintainer: Claudia D. van Borkulo <cvborkulo@gmail.com>
 }

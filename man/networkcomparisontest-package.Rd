@@ -11,12 +11,12 @@ This permutation based hypothesis test, suited for gaussian and binary data, ass
 \tabular{ll}{
 Package: \tab NetworkComparisonTest\cr
 Type: \tab Package\cr
-Version: \tab 2.1.2\cr
+Version: \tab 2.2.0\cr
 License: \tab GPL-2\cr
 }
 }
 \author{
-Claudia D. van Borkulo, with contributions from Jonas Haslbeck, Sacha Epskamp and Alex Millner
+Claudia D. van Borkulo, with contributions from Jonas Haslbeck, Sacha Epskamp, Payton Jones and Alex Millner
 
 Maintainer: Claudia D. van Borkulo <cvborkulo@gmail.com>
 }
