@@ -5,7 +5,7 @@
 Statistical Comparison of Two Networks Based on Three Invariance Measures
 }
 \description{
-This permutation based hypothesis test, suited for gaussian and binary data, assesses the difference between two networks based on several invariance measures (network structure invariance, global strength invariance, edge invariance). Network structures are estimated with l1-regularized partial correlations (gaussian data) or with l1-regularized logistic regression (eLasso, binary data). Suited for comparison of independent and dependent samples (currently, only for one group measured twice).
+This permutation based hypothesis test, suited for gaussian and binary data, assesses the difference between two networks based on several invariance measures (network structure invariance, global strength invariance, edge invariance). Network structures are estimated with l1-regularized partial correlations (gaussian data) or with l1-regularized logistic regression (eLasso, binary data). Suited for comparison of independent and dependent samples. For dependent samples, only supported for data of one group which is measured twice.
 }
 \details{
 \tabular{ll}{

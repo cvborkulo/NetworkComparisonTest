@@ -1,6 +1,7 @@
 export(NCT)
-S3method(plot,NCT)
+S3method(print,NCT)
 S3method(summary,NCT)
+S3method(plot,NCT)
 
 import(qgraph)
 import(IsingFit)
@@ -11,6 +12,7 @@ importFrom("stats", "cor", "p.adjust")
 importFrom("utils", "setTxtProgressBar", "txtProgressBar")
 importFrom("Matrix", "nearPD")
 importFrom("reshape2","melt")
+importFrom("stats", "na.omit")
 
 
 importFrom("methods", "is")

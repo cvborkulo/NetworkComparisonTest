@@ -156,7 +156,7 @@ colnames(data1) <- colnames(data2) <- c('V1', 'V2', 'V3', 'V4', 'V5', 'V6')
 # Iterations (it) set to 10 to save time.
 # Low number of iterations can give unreliable results. Should be 1000 at least.
 
-# Testing on all three aspects
+# Testing the three aspects that are validated (network invariance, global strength, edge weight)
 # 2 edges are tested here: between variable 1 and 2, 
 # and between 3 and 6 (can be list(c(2,1),c(6,3)) as well)
 Res_1 <- NCT(data1, data2, gamma=0, it=10, binary.data = TRUE, 
