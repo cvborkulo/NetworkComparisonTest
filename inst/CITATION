@@ -15,5 +15,5 @@ citEntry(entry = "Article",
   textVersion  =
   paste("Claudia D. van Borkulo, Lynn Boschloo, Jolanda J. Kossakowski, Pia Tio, Robert A. Schoevers, Denny Borsboom, Lourens J. Waldorp (2017).",
         "Comparing network structures on three aspects: A permutation test.",
-        "doi 10.13140/RG. 2.2. 29455.38569.")
+        "doi:10.13140/RG.2.2.29455.38569.")
 )

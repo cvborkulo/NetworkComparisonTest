@@ -28,5 +28,6 @@ Description: This permutation based hypothesis test, suited for Gaussian and
     correlations (Gaussian data) or with l1-regularized logistic regression (eLasso,
     binary data). Suited for comparison of independent and dependent samples. 
     For dependent samples, only supported for data of one group which is measured twice.
+    See van Borkulo, Boschloo, Kossakowski, Tio, Schoevers, Borsboom, Waldorp (2017) <doi:10.13140/RG.2.2.29455.38569>.
 License: GPL-2
 RoxygenNote: 6.1.1
