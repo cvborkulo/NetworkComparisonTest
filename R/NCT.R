@@ -10,8 +10,10 @@ NCT <- function(data1, data2,
                 communities=NULL,useCommunities="all",
                 estimator, estimatorArgs = list(), 
                 verbose = TRUE){ 
-
   p.adjust.methods <- match.arg(p.adjust.methods)
+  
+  # Fix for networktools example:
+  if (missing(edges)) edges <- "all"
   
   # Small test to warn people of arguments that are ignored if the input is a bootnet object:
   # Test for bootnet objects:
