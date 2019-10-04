@@ -244,9 +244,6 @@ NCT <- function(data1, data2,
           x1perm <- dataall[s,]
           x2perm <- dataall[b[-s], ]
           
-          
-          apply(x1perm, 2,  function(x) min(c(sum(x==0), sum(x==1))))
-          
           # check glmnet requirement: at least two instances of each category
           ind <- all(apply(x1perm, 2,  function(x) min(c(sum(x==0), sum(x==1)))) > 1) & all(apply(x2perm, 2,  function(x) min(c(sum(x==0), sum(x==1)))) > 1)
           if(ind) okay <- TRUE else counter <- counter + 1
