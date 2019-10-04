@@ -46,12 +46,12 @@ NCT <- function(data1, data2,
     if (verbose) message("Note: estimateNetwork object used - estimation method has possibly not been validated.")
     # Estimator:
     # if (missing(estimator)){
-      estimator <- data1$estimator
+    estimator <- data1$estimator
     # }
     # Arguments:
     # if (missing(estimatorArgs)){
-      estimatorArgs <- data1$arguments
-      estimatorArgs$verbose <- FALSE
+    estimatorArgs <- data1$arguments
+    estimatorArgs$verbose <- FALSE
     # }
     # Data:
     data1 <- data1$data
@@ -61,25 +61,25 @@ NCT <- function(data1, data2,
   if (is(data2,"bootnetResult")){
     # Estimator:
     # if (missing(estimator2)){
-      estimator2 <- data2$estimator
+    estimator2 <- data2$estimator
     # }
     # Arguments:
     # if (missing(estimatorArgs2)){
-      estimatorArgs2 <- data2$arguments
-      estimatorArgs2$verbose <- FALSE
+    estimatorArgs2 <- data2$arguments
+    estimatorArgs2$verbose <- FALSE
     # }
-      
-      # Test if estimation methods are identical:
-      if (!identical(estimator,estimator2)){
-        stop("Estimation methods are not identical.")
-      }
-      
-      # Test if arguments are identical:
-      # Test if estimation methods are identical:
-      if (!identical(estimatorArgs,estimatorArgs2)){
-        stop("Estimation arguments are not identical.")
-      }
-      
+    
+    # Test if estimation methods are identical:
+    if (!identical(estimator,estimator2)){
+      stop("Estimation methods are not identical.")
+    }
+    
+    # Test if arguments are identical:
+    # Test if estimation methods are identical:
+    if (!identical(estimatorArgs,estimatorArgs2)){
+      stop("Estimation arguments are not identical.")
+    }
+    
     # Data:
     data2 <- data2$data
   }
@@ -96,7 +96,7 @@ NCT <- function(data1, data2,
   
   # Estimator function:
   if (missing(estimator)){
-
+    
     if (binary.data){
       estimator <- NCT_estimator_Ising
       estimatorArgs$AND <- AND
@@ -151,14 +151,14 @@ NCT <- function(data1, data2,
                  "bridgeBetweenness", "bridgeExpectedInfluence")
   centrality <- if(centrality[1]=="all") {
     validCentrality
-    }else {
-      centrality
-    }
+  }else {
+    centrality
+  }
   diffcen.perm <- matrix(NA, it, nnodes*length(centrality))
   
   #####################################
   ###    procedure for all data     ###
-
+  
   #####################################
   
   # Estimate the networks:
@@ -185,7 +185,7 @@ NCT <- function(data1, data2,
     # global strength of individual networks
     glstrinv.sep <- c(sum(nw1[upper.tri(nw1)]), sum(nw2[upper.tri(nw2)]))
   }
-
+  
   
   ## Individual edge invariance
   diffedges.real <- abs(nw1-nw2)[upper.tri(abs(nw1-nw2))] 
@@ -196,7 +196,7 @@ NCT <- function(data1, data2,
   nwinv.real <- max(diffedges.real)
   
   ## Centrality invariance
-
+  
   if(test.centrality==TRUE){
     if (!all(centrality %in% validCentrality)) {
       stop(paste0("'centrality' must be one of: ", paste0("'", 
@@ -220,7 +220,7 @@ NCT <- function(data1, data2,
   #####################################
   #####     Start permutations    #####
   #####################################
-
+  
   for (i in 1:it)
   {
     diffedges.permtemp <- matrix(0, nvars, nvars)
@@ -228,9 +228,35 @@ NCT <- function(data1, data2,
     # If not paired data
     if(paired==FALSE)
     {
-      s <- sample(1:(nobs1+nobs2),nobs1,replace=FALSE)
-      x1perm <- dataall[s,]
-      x2perm <- dataall[b[-s],]
+      # s <- sample(1:(nobs1+nobs2),nobs1,replace=FALSE)
+      # x1perm <- dataall[s,]
+      # x2perm <- dataall[b[-s], ]
+      
+      # Include variance check
+      okay <- FALSE
+      counter <- 0
+      
+      if(binary.data) { # if binary data we need to resample the permutation to ensure mininum required variance for glmnet
+        while(okay == FALSE) {
+          
+          # Permute
+          s <- sample(1:(nobs1+nobs2),nobs1,replace=FALSE)
+          x1perm <- dataall[s,]
+          x2perm <- dataall[b[-s], ]
+          
+          
+          apply(x1perm, 2,  function(x) min(c(sum(x==0), sum(x==1))))
+          
+          # check glmnet requirement: at least two instances of each category
+          ind <- all(apply(x1perm, 2,  function(x) min(c(sum(x==0), sum(x==1)))) > 1) & all(apply(x2perm, 2,  function(x) min(c(sum(x==0), sum(x==1)))) > 1)
+          if(ind) okay <- TRUE else counter <- counter + 1
+          
+        } # end: while
+      } else{
+        s <- sample(1:(nobs1+nobs2),nobs1,replace=FALSE)
+        x1perm <- dataall[s,]
+        x2perm <- dataall[b[-s], ]
+      }
       
       
       # Estimate the networks:
@@ -256,6 +282,8 @@ NCT <- function(data1, data2,
       x2perm <- x2[s==1,]
       x2perm <- rbind(x2perm,x1[s==2,])
       
+      # To do: add variance check for paired data
+      
       
       # Estimate the networks:
       r1perm <- do.call(estimator,c(list(x1perm),estimatorArgs))
@@ -276,13 +304,13 @@ NCT <- function(data1, data2,
     } else {
       glstrinv.perm[i] <- abs(sum(r1perm[upper.tri(r1perm)])-sum(r2perm[upper.tri(r2perm)]))
     }
-
+    
     diffedges.perm[i,] <- abs(r1perm-r2perm)[upper.tri(abs(r1perm-r2perm))]
     diffedges.permtemp[upper.tri(diffedges.permtemp, diag=FALSE)] <- diffedges.perm[i,]
     diffedges.permtemp <- diffedges.permtemp + t(diffedges.permtemp)
     einv.perm.all[,,i] <- diffedges.permtemp
     nwinv.perm[i] <- max(diffedges.perm[i,])
-
+    
     
     if(test.centrality==TRUE){
       cen1permtemp <- centrality_auto(r1perm)$node.centrality
@@ -292,7 +320,7 @@ NCT <- function(data1, data2,
         b1permtemp <- networktools::bridge(r1perm, communities=communities, useCommunities=useCommunities)
         b2permtemp <- networktools::bridge(r2perm, communities=communities, useCommunities=useCommunities)
         names(b1permtemp) <- names(b2permtemp) <- c(bridgecen, "bridgeExpectedInfluence2step", 
-                                    "communities")
+                                                    "communities")
         cen1permtemp <- data.frame(c(cen1permtemp,b1))
         cen2permtemp <- data.frame(c(cen2permtemp,b2))
       }
@@ -303,14 +331,16 @@ NCT <- function(data1, data2,
         diffcen.perm[i,] <- reshape2::melt(diffcen.permtemp[which(nodes%in%colnames(data1)),centrality])$value
       } 
     }
-
+    
     
     if (progressbar==TRUE) setTxtProgressBar(pb, i)
   }
   #####################################
   #####      End permutations     #####
   #####################################
-
+  
+  # browser()
+  
   #####################################
   #####     Calculate p-values    #####
   #####################################
@@ -331,9 +361,9 @@ NCT <- function(data1, data2,
       einv.pvals <- melt(corrpvals.all, na.rm=TRUE, value.name = 'p-value')
       einv.perm <- einv.perm.all
       einv.real <- diffedges.realoutput
-
+      
       edges.tested <- "all"
-
+      
     }
     
     ## If a selection of edges should be tested
@@ -379,7 +409,7 @@ NCT <- function(data1, data2,
                 einv.perm = einv.perm, 
                 nw1 = nw1,
                 nw2 = nw2)
-
+    
   }
   
   if (progressbar==TRUE) close(pb)
@@ -422,10 +452,10 @@ NCT <- function(data1, data2,
       colnames(res[["diffcen.perm"]]) <- apply(expand.grid(colnames(data1), centrality), 1, paste, collapse=".")
     }
     else {
-     rownames(res[["diffcen.real"]]) <- rownames(res[["diffcen.pval"]]) <- nodes
+      rownames(res[["diffcen.real"]]) <- rownames(res[["diffcen.pval"]]) <- nodes
     }
   }
-
+  
   class(res) <- "NCT"
   return(res)
 }
