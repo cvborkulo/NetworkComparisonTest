@@ -318,8 +318,8 @@ NCT <- function(data1, data2,
         b2permtemp <- networktools::bridge(r2perm, communities=communities, useCommunities=useCommunities)
         names(b1permtemp) <- names(b2permtemp) <- c(bridgecen, "bridgeExpectedInfluence2step", 
                                                     "communities")
-        cen1permtemp <- data.frame(c(cen1permtemp,b1))
-        cen2permtemp <- data.frame(c(cen2permtemp,b2))
+        cen1permtemp <- data.frame(c(cen1permtemp,b1permtemp))
+        cen2permtemp <- data.frame(c(cen2permtemp,b2permtemp))
       }
       diffcen.permtemp <- as.matrix(cen1permtemp) - as.matrix(cen2permtemp)
       if(nodes[1]=="all"){
