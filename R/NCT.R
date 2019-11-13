@@ -344,7 +344,7 @@ NCT <- function(data1, data2,
   if(test.edges==TRUE)
   {
     # vector with uncorrected p values
-    edges.pvaltemp <- colSums(diffedges.perm >= diffedges.realmat)/it 
+    edges.pvaltemp <- (colSums(diffedges.perm >= diffedges.realmat) + 1) / (it + 1)
     
     ## If all edges should be tested
     if(is.character(edges))
@@ -395,10 +395,10 @@ NCT <- function(data1, data2,
     
     res <- list(glstrinv.real = glstrinv.real,
                 glstrinv.sep = glstrinv.sep,
-                glstrinv.pval = sum(glstrinv.perm >= glstrinv.real)/it, 
+                glstrinv.pval = (sum(glstrinv.perm >= glstrinv.real) + 1) / (it + 1), 
                 glstrinv.perm = glstrinv.perm,
                 nwinv.real = nwinv.real,
-                nwinv.pval = sum(nwinv.perm >= nwinv.real)/it, 
+                nwinv.pval = (sum(nwinv.perm >= nwinv.real) + 1) / (it + 1), 
                 nwinv.perm = nwinv.perm,
                 edges.tested = edges.tested,
                 einv.real = einv.real,
@@ -416,10 +416,10 @@ NCT <- function(data1, data2,
     res <- list(
       glstrinv.real = glstrinv.real, 
       glstrinv.sep = glstrinv.sep,
-      glstrinv.pval = sum(glstrinv.perm >= glstrinv.real)/it, 
+      glstrinv.pval = (sum(glstrinv.perm >= glstrinv.real) + 1) / (it + 1), 
       glstrinv.perm = glstrinv.perm,
       nwinv.real = nwinv.real,
-      nwinv.pval = sum(nwinv.perm >= nwinv.real)/it,
+      nwinv.pval = (sum(nwinv.perm >= nwinv.real) + 1) / (it + 1),
       nwinv.perm = nwinv.perm, 
       nw1 = nw1,
       nw2 = nw2
@@ -434,7 +434,7 @@ NCT <- function(data1, data2,
     } 
     diffcen.realmat <- matrix(diffcen.real.vec, it, nnodes*length(centrality), 
                               byrow = TRUE)
-    diffcen.pvaltemp <- colSums(abs(diffcen.perm) >= abs(diffcen.realmat))/it
+    diffcen.pvaltemp <- (colSums(abs(diffcen.perm) >= abs(diffcen.realmat)) + 1) / (it + 1)
     diffcen.HBall <- p.adjust(diffcen.pvaltemp, method = p.adjust.methods)
     diffcen.pval <- matrix(diffcen.HBall, nnodes, length(centrality))
     diffcen.real <-  matrix(diffcen.real.vec, nrow=nnodes,ncol=length(centrality))
