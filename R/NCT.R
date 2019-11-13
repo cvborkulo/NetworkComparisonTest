@@ -350,7 +350,7 @@ NCT <- function(data1, data2,
     if(is.character(edges))
     {
       # corrected p-values (or not if p.adjust.methods='none')
-      corrpvals.all.temp <- round(p.adjust(edges.pvaltemp, method=p.adjust.methods),3)
+      corrpvals.all.temp <- p.adjust(edges.pvaltemp, method=p.adjust.methods)
       # matrix with corrected p values
       corrpvals.all
       corrpvals.all[upper.tri(corrpvals.all,diag=FALSE)] <- corrpvals.all.temp 
