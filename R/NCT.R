@@ -210,6 +210,7 @@ NCT <- function(data1, data2,
       b2 <- networktools::bridge(nw2, communities=communities, useCommunities=useCommunities)
       names(b1) <- names(b2) <- c(bridgecen, "bridgeExpectedInfluence2step", 
                                   "communities")
+      b1$communities <- b2$communities <- NULL
       cen1 <- data.frame(c(cen1,b1))
       cen2 <- data.frame(c(cen2,b2))
     }
@@ -318,6 +319,7 @@ NCT <- function(data1, data2,
         b2permtemp <- networktools::bridge(r2perm, communities=communities, useCommunities=useCommunities)
         names(b1permtemp) <- names(b2permtemp) <- c(bridgecen, "bridgeExpectedInfluence2step", 
                                                     "communities")
+        b1permtemp$communities <- b2permtemp$communities <- NULL
         cen1permtemp <- data.frame(c(cen1permtemp,b1permtemp))
         cen2permtemp <- data.frame(c(cen2permtemp,b2permtemp))
       }
