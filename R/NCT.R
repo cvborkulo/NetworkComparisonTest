@@ -147,8 +147,8 @@ NCT <- function(data1, data2,
   validCentrality <- c("closeness", "betweenness", 
                        "strength", "expectedInfluence", "bridgeStrength", 
                        "bridgeCloseness", "bridgeBetweenness", "bridgeExpectedInfluence")
-  bridgecen <- c("bridgeStrength", "bridgeCloseness", 
-                 "bridgeBetweenness", "bridgeExpectedInfluence")
+  bridgecen <- c("bridgeStrength", "bridgeBetweenness", 
+                 "bridgeCloseness", "bridgeExpectedInfluence")
   centrality <- if(centrality[1]=="all") {
     validCentrality
   }else {
