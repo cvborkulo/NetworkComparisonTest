@@ -10,6 +10,10 @@ NCT <- function(data1, data2,
                 communities=NULL,useCommunities="all",
                 estimator, estimatorArgs = list(), 
                 verbose = TRUE){ 
+  
+  # store call
+  cl <- match.call(expand.dots = TRUE)
+  
   p.adjust.methods <- match.arg(p.adjust.methods)
   
   # Fix for networktools example:
@@ -452,6 +456,8 @@ NCT <- function(data1, data2,
       rownames(res[["diffcen.real"]]) <- rownames(res[["diffcen.pval"]]) <- nodes
     }
   }
+  
+  res$info$call <- cl
   
   class(res) <- "NCT"
   return(res)
