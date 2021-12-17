@@ -12,7 +12,18 @@ NCT <- function(data1, data2,
                 verbose = TRUE){ 
   
   # store call
-  cl <- match.call(expand.dots = TRUE)
+  match.call.defaults <- function(...) {
+  # Credit to Neal Fultz
+    call <- evalq(match.call(expand.dots = FALSE), parent.frame(1))
+    formals <- evalq(formals(), parent.frame(1))
+    
+    for(i in setdiff(names(formals), names(call)))
+      call[i] <- list( formals[[i]] )
+    
+    
+    match.call(sys.function(sys.parent()), call)
+  }
+  cl <- match.call.defaults()
   
   p.adjust.methods <- match.arg(p.adjust.methods)
   
