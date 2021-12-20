@@ -1,39 +1,65 @@
 print.NCT <- function(x,...){
-  cat("\n NETWORK INVARIANCE TEST \n Test statistic M: ", x$nwinv.real,
+  if(x$info$call$abs){
+    global_stat_message = "\n\n GLOBAL STRENGTH INVARIANCE TEST \n Global strength per group: "
+  } else {
+    global_stat_message = "\n\n GLOBAL EXPECTED INFLUENCE INVARIANCE TEST \n Global EI per group: "
+  }
+  cat("\n NETWORK INVARIANCE TEST \n Test statistic M: \n", x$nwinv.real,
       "\n p-value", x$nwinv.pval,
-      "\n\n GLOBAL STRENGTH INVARIANCE TEST \n Global strength per group: ", x$glstrinv.sep,
+      global_stat_message, x$glstrinv.sep,
       "\n Test statistic S: ", x$glstrinv.real,
-      "\n p-value", x$glstrinv.pval,
-      "\n\n EDGE INVARIANCE TEST \n\n")
-  print(x$einv.pvals)
-  cat("\n CENTRALITY INVARIANCE TEST \n \n")
-  print(x$diffcen.pval)
+      "\n p-value", x$glstrinv.pval)
+  if(x$info$call$test.edges){
+    cat("\n\n EDGE INVARIANCE TEST \n")
+    print(x$einv.pvals) 
+  }
+  if(x$info$call$test.centrality){
+    cat("\n CENTRALITY INVARIANCE TEST \n")
+    print(x$diffcen.pval)
+  }
 }
 
 summary.NCT <- function(object,...){
-  cenTest <- if(is.null(object$diffcen.real)){
-    c(NA,NA)
+  if(object$info$call$abs){
+    global_stat_message = "\n\n GLOBAL STRENGTH INVARIANCE TEST \n Global strength per group: "
   } else {
-    c(reshape2::melt(object$diffcen.real)$value,
-      reshape2::melt(object$diffcen.pval)$value)
+    global_stat_message = "\n\n GLOBAL EXPECTED INFLUENCE INVARIANCE TEST \n Global EI per group: "
   }
   
-  cat("\n NETWORK INVARIANCE TEST
-      Test statistic M: ", object$nwinv.real,
+  if(object$info$call$paired){
+    paired <- "DEPENDENT GROUPS"
+  } else {
+    paired <- "INDEPENDENT GROUPS"
+  }
+  
+  if(object$info$call$binary.data){
+    data_type <- "BINARY"
+  } else {
+    data_type <- "GAUSSIAN"
+  }
+  
+  cat("", paired, data_type, "NETWORK COMPARISON TEST \n")
+  p_adjust <- ifelse(is.language(object$info$call$p.adjust.methods), "none", object$info$call$p.adjust.methods)
+  cat("\n P-VALUE CORRECTION:", p_adjust, "\n")
+  
+  cat("\n NETWORK INVARIANCE TEST \n Test statistic M:", object$nwinv.real,
       "\n p-value", object$nwinv.pval,
-      "\n\n GLOBAL STRENGTH INVARIANCE TEST
-      Global strength per group: ", object$glstrinv.sep,
+      global_stat_message, object$glstrinv.sep,
       "\n Test statistic S: ", object$glstrinv.real,
       "\n p-value", object$glstrinv.pval,
-      "\n\n EDGE INVARIANCE TEST
-      Edges tested: ", object$edges.tested,
-      "\n Test statistic E: ", object$einv.real,
-      "\n p-value", object$einv.pvals$`p-value`,
-      "\n\n CENTRALITY INVARIANCE TEST
-      Nodes tested:", rownames(object$diffcen.pval),
-      "\n Centralities tested:", colnames(object$diffcen.pval),
-      "\n Test statistic C: ", na.omit(cenTest[1]),
-      "\n p-value", na.omit(cenTest[2]))
+      "\n\n EDGE INVARIANCE TEST \n Edges tested:", object$edges.tested,
+      "\n Test statistic E:", object$einv.real,
+      "\n p-value:", object$einv.pvals$`p-value`)
+  if(object$info$call$test.centrality){
+    cenTest <- c(reshape2::melt(object$diffcen.real)$value,
+                 reshape2::melt(object$diffcen.pval)$value)  
+    cat("\n\n CENTRALITY INVARIANCE TEST \n Nodes tested:", rownames(object$diffcen.pval),
+        "\n Centralities tested:", colnames(object$diffcen.pval))
+    cat("\n Test statistics C: \n")
+    print(object$diffcen.real)
+    cat("\n p-values: \n")
+    print(object$diffcen.pval)
+  }
 }
 
 plot.NCT <- function(x,what = c("strength","network","edge","centrality"),...){
