@@ -11,15 +11,34 @@ NCT <- function(data1, data2,
                 estimator, estimatorArgs = list(), 
                 verbose = TRUE){ 
   
-  # store call
+  # store function call, including default arguments not explicitly set - credit to Neal Fultz
   match.call.defaults <- function(...) {
-  # Credit to Neal Fultz
+    # Extract explicit call arguments
     call <- evalq(match.call(expand.dots = FALSE), parent.frame(1))
+    # Extract default call arguments
     formals <- evalq(formals(), parent.frame(1))
     
-    for(i in setdiff(names(formals), names(call)))
-      call[i] <- list( formals[[i]] )
+    # When extracting calls, the symbols T or F not properly mapped to TRUE and FALSE
+    clean.call.arg <- function(arg){
+      if(is.null(arg)){
+        return(list(arg))
+      }
+      if(arg == "T"){
+        return(list(TRUE))
+      }
+      if(arg == "F"){
+        return(list(FALSE))
+      }
+      return(list(arg))
+    }
+    for(i in 1:length(names(call))){
+      call[i] <- clean.call.arg(call[[i]])
+    }
     
+    # if default argument not explicitly written, add the default value to the saved call
+    for(i in setdiff(names(formals), names(call))){
+      call[i] <- list(formals[[i]])
+    }
     
     match.call(sys.function(sys.parent()), call)
   }
