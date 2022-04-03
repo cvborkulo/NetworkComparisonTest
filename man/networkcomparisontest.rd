@@ -58,7 +58,7 @@ Logical. Can be TRUE of FALSE to indicate whether or not differences in individu
 Character or list. When 'all', differences between all individual edges are tested. When provided a list with one or more pairs of indices referring to variables, the provided edges are tested.
 }
   \item{progressbar}{
-Logical. Should the pbar be plotted in order to see the progress of the estimation procedure? Defaults to TRUE.
+Logical. Should the pbar be plotted in order to see the progress of the estimation procedure? Defaults to TRUE. Not supported when using parallel computing (nCores > 1).
 }
   \item{make.positive.definite}{
 If \code{make.positive.definite = TRUE}, the covariance matrices used for the glasso are projected to the nearest positive definite matrices, if they are not yet positive definite. This is useful for small n, for which it is very likely that at least one of the bootstrap comparisons involves a covariance matrix that is not positive definite.

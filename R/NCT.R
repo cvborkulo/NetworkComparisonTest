@@ -50,6 +50,12 @@ NCT <- function(data1, data2,
   # Fix for networktools example:
   if (missing(edges)) edges <- "all"
   
+  #progressbar isn't supported when using parallel computing
+  if (progressbar & nCores > 1){
+    message("Note: Progress bar isn't supported when using parallel computing.")
+    }
+
+  
   # Small test to warn people of arguments that are ignored if the input is a bootnet object:
   # Test for bootnet objects:
   if (is(data1,"bootnetResult") || is(data2,"bootnetResult")){
@@ -173,14 +179,9 @@ NCT <- function(data1, data2,
   }
   
   glstrinv.real <- nwinv.real <- c()
-  glstrinv.perm <- nwinv.perm <- bigstatsr::FBM(nrow = it,ncol = 1)
-  diffedges.perm <- bigstatsr::as_FBM(matrix(0,it,nedges))
-  einv.perm.all <- bigstatsr::as_FBM(matrix(NA,nvars^2, it))
-  einv.perm.all_temp <- bigstatsr::as_FBM(matrix(NA,nvars,nvars))
   corrpvals.all <- matrix(NA,nvars,nvars) 
   edges.pvalmattemp <- matrix(0,nvars,nvars) 
-  
-  
+
   validCentrality <- c("closeness", "betweenness", 
                        "strength", "expectedInfluence", "bridgeStrength", 
                        "bridgeCloseness", "bridgeBetweenness", "bridgeExpectedInfluence")
@@ -191,7 +192,6 @@ NCT <- function(data1, data2,
   }else {
     centrality
   }
-  diffcen.perm <- bigstatsr::as_FBM(matrix(NA, it, nnodes*length(centrality)))
   
   #####################################
   ###    procedure for all data     ###
@@ -259,6 +259,12 @@ NCT <- function(data1, data2,
   #####     Start permutations    #####
   #####################################
   if (nCores == 1) {
+
+    glstrinv.perm <- nwinv.perm <- c()
+    diffedges.perm <- matrix(0,it,nedges) 
+    einv.perm.all <- array(NA,dim=c(nvars, nvars, it))
+    diffcen.perm <- matrix(NA, it, nnodes*length(centrality))
+    
     for (i in 1:it)
     {
       diffedges.permtemp <- matrix(0, nvars, nvars)
@@ -376,25 +382,18 @@ NCT <- function(data1, data2,
     #####################################
     ##### Start Parallel permutations ###
     #####################################
-  
+    
+    glstrinv.perm <- nwinv.perm <- bigstatsr::FBM(nrow = it,ncol = 1)
+    diffedges.perm <- bigstatsr::as_FBM(matrix(0,it,nedges))
+    einv.perm.all <- bigstatsr::as_FBM(matrix(NA,nvars^2, it))
+    diffcen.perm <- bigstatsr::as_FBM(matrix(NA, it, nnodes*length(centrality)))
+    
     nClust <- nCores - 1
     cl_temp <- parallelly::makeClusterPSOCK(workers = nClust,verbose = T)
     doParallel::registerDoParallel(cl_temp)
     
-    excl <- c() # placeholder for arguments that should NOT be passed to the cluster
-    
-    # pb <- txtProgressBar(0, it, style = 2)
-    
-    comb <- function(x, ...) {
-      lapply(seq_along(x),
-             function(i) c(x[[i]], lapply(list(...), function(y) y[[i]])))
-    }
-    
-    permResults <- foreach (i = 1:it, .combine = "comb", .multicombine=TRUE,
-                            .init=list(list(), list()), .verbose = F,
-                            # .export = ls()[!ls()%in%c(excl,"cl_temp")],
+    permResults <- foreach (i = 1:it,
                             .errorhandling = "stop"
-                            # , .packages = c("networktools","bootnet","reshape2")
                             ) %dopar% {
   
                               diffedges.permtemp <- matrix(0, nvars, nvars)
@@ -481,12 +480,6 @@ NCT <- function(data1, data2,
                               diffedges.permtemp <- diffedges.permtemp + t(diffedges.permtemp)
                               einv.perm.all[,i] <- c(diffedges.permtemp)
                               nwinv.perm[i] <- max(diffedges.perm[i,])
-                              for(ji in 1:nvars){
-                                for(ii in 1:nvars){
-                                  einv.perm.all_temp[ii,ji] = diffedges.permtemp[ii,ji]
-                                }
-                              }
-                              
                               
                               if(test.centrality==TRUE){
                                 cen1permtemp <- centrality_auto(r1perm)$node.centrality
@@ -511,34 +504,25 @@ NCT <- function(data1, data2,
                                 diffcen.perm[i,] = NA
                               }
         
-        # res <- list(
-        #     glstrinv.perm = glstrinv.perm_iter,
-        #     diffedges.perm = diffedges.perm_iter,
-        #     einv.perm.all = einv.perm.all_iter,
-        #     nwinv.perm = nwinv.perm_iter,
-        #     diffcen.perm = diffcen.perm_iter
-        #   )
-          if (progressbar==TRUE) setTxtProgressBar(pb, i)
           return(NULL)
                             }
     parallelly::autoStopCluster(cl_temp)
     gc()
+    glstrinv.perm = as.numeric(glstrinv.perm[])
+    diffedges.perm = diffedges.perm[]
+    einv.perm.all <- `dim<-`(einv.perm.all[], c(nvars, nvars, it))
+    nwinv.perm = nwinv.perm[]
+    diffcen.perm = diffcen.perm[]
     
   }
 
-  glstrinv.perm = as.numeric(glstrinv.perm[])
-  diffedges.perm = diffedges.perm[]
-  einv.perm.all2 <- aperm(`dim<-`(t(einv.perm.all[]), c(nvars, nvars, it)), c(2, 1, 3))
-  nwinv.perm = nwinv.perm[]
-  diffcen.perm = diffcen.perm[]
-  # einv.perm.all_temp
   
   #####################################
   #####      End permutations     #####
   #####################################
-  
-  browser()
- 
+
+  # browser()
+
   
   #####################################
   #####     Calculate p-values    #####

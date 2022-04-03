@@ -1,7 +1,7 @@
 Package: NetworkComparisonTest
 Type: Package
 Title: Statistical Comparison of Two Networks Based on Three Invariance Measures
-Version: 2.2.1
+Version: 2.2.2
 Authors@R: c(
     person("Claudia", "van Borkulo", email = "cvborkulo@gmail.com",role = c("aut","cre")),
   person("Sacha", "Epskamp", role = c("aut")),
