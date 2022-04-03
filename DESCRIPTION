@@ -10,6 +10,8 @@ Authors@R: c(
   person("Alex", "Millner", role = c("ctb")))
 Maintainer: Claudia van Borkulo <cvborkulo@gmail.com> 
 Imports:
+    snow,
+    foreach,
     qgraph,
     IsingFit,
     IsingSampler,
@@ -18,7 +20,10 @@ Imports:
     graphics,
     utils,
     Matrix,
-    methods
+    methods,
+    bigstatsr,
+    doParallel,
+    parallelly
 Suggests:
     networktools
 Description: This permutation based hypothesis test, suited for Gaussian and binary data, 
@@ -30,4 +35,4 @@ Description: This permutation based hypothesis test, suited for Gaussian and bin
     one group which is measured twice. See van Borkulo et al. (2017) 
     <doi:10.13140/RG.2.2.29455.38569>.
 License: GPL-2
-RoxygenNote: 6.1.1
+RoxygenNote: 7.1.2

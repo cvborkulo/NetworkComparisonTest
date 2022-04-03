@@ -19,7 +19,8 @@ NCT(data1, data2,
       centrality=c("strength","expectedInfluence"),nodes="all",
       communities=NULL,useCommunities="all",
       estimator, estimatorArgs = list(), 
-      verbose = TRUE)
+      verbose = TRUE, 
+      nCores = 1)
 }
 
 \arguments{
@@ -89,7 +90,7 @@ A function that takes data as input and returns a network structure. This can be
 Arguments to the \code{estimator} function
 }
 \item{verbose}{Logical: Should some warnings and notes be printed?}
-
+\item{nCores}{Number of cores to use in computing results. Set to 1 to not use parallel computing.}
 }
 
 
