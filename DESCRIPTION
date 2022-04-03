@@ -10,7 +10,6 @@ Authors@R: c(
   person("Alex", "Millner", role = c("ctb")))
 Maintainer: Claudia van Borkulo <cvborkulo@gmail.com> 
 Imports:
-    snow,
     foreach,
     qgraph,
     IsingFit,
