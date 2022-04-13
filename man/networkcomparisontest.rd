@@ -2,10 +2,10 @@
 \alias{NetworkComparisonTest}
 \alias{NCT}
 \title{
-Statistical Comparison of Two Networks Based on Three Invariance Measures
+Statistical Comparison of Two Networks Based on Several Invariance Measures
 }
 \description{
-This permutation based hypothesis test, suited for gaussian and binary data, assesses the difference between two networks based on several invariance measures (network structure invariance, global strength invariance, edge invariance). Network structures are estimated with l1-regularized partial correlations (gaussian data) or with l1-regularized logistic regression (eLasso, binary data). Suited for comparison of independent and dependent samples. For dependent samples, only supported for data of one group which is measured twice.
+This permutation based hypothesis test, suited for several types of data supported by the estimateNetwork function of the bootnet package (Epskamp & Fried, 2018), assesses the difference between two networks based on several invariance measures (network structure invariance, global strength invariance, edge invariance, several centrality measures, etc.). Network structures are estimated with l1-regularization. The Network Comparison Test is suited for comparison of independent (e.g., two different groups) and dependent samples (e.g., one group that is measured twice).
 }
 \usage{
 NCT(data1, data2, 
@@ -104,7 +104,6 @@ NCT returns a 'NCT' object that contains the following items:
 \item{nwinv.perm}{The values of the maximum difference in edge weights of the permuted networks}
 \item{nwinv.pval }{The p value resulting from the permutation test concerning the maximum difference in edge weights.}
 \item{einv.pvals}{p-values (corrected for multiple testing or not according to 'p.adjust.methods') per edge from the permutation test concerning differences in edges weights. Only returned if test.edges = TRUE.}
-\item{edges.tested}{The pairs of variables between which the edges are called to be tested. Only if test.edges = TRUE.}
 \item{einv.real}{The value of the difference in edge weight of the observed networks (multiple values if more edges are called to test). Only if test.edges = TRUE.}
 \item{einv.perm}{The values of the difference in edge weight of the permuted networks. Only if test.edges = TRUE.}
 \item{diffcen.real}{The values of the difference in centralities of the observed networks. Only if test.centrality = TRUE.}
@@ -119,7 +118,7 @@ Good, P.I. Permutation, parametric and bootstrap tests of hypotheses. Vol. 3. Ne
 
 van Borkulo, C. D., Boschloo, L., Borsboom, D., Penninx, B. W. J. H., Waldorp, L. J., & Schoevers, R.A. (2015). Association of symptom network structure with the course of depression. JAMA Psychiatry. 2015;72(12). doi:10.1001/jamapsychiatry.2015.2079
 
-van Borkulo, C. D., Boschloo, Kossakowski, J., Tio, P., L., Schoevers, R.A., Borsboom, D., & , Waldorp, L. J. (2016). Comparing network structures on three aspects: A permutation test. doi:10.13140/RG.2.2.29455.38569
+van Borkulo, C. D., van Bork, R., Boschloo, Kossakowski, J., Tio, P., L., Schoevers, R.A., Borsboom, D., & , Waldorp, L. J. (2021). Comparing network structures on three aspects: A permutation test. DOI: 10.1037/met0000476
 }
 \author{
 Claudia D. van Borkulo, with contributions from Jonas Haslbeck, Sacha Epskamp, Payton Jones and Alex Millner

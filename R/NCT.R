@@ -192,7 +192,6 @@ NCT <- function(data1, data2,
   
   #####################################
   ###    procedure for all data     ###
-  
   #####################################
   
   # Estimate the networks:
@@ -255,6 +254,11 @@ NCT <- function(data1, data2,
   #####################################
   #####     Start permutations    #####
   #####################################
+  # warning when paired data is compared
+  if(paired==TRUE)
+  {
+    if (verbose) message("Note: NCT for dependent data has not been validated.")
+  }
   
   for (i in 1:it)
   {
@@ -263,10 +267,6 @@ NCT <- function(data1, data2,
     # If not paired data
     if(paired==FALSE)
     {
-      # s <- sample(1:(nobs1+nobs2),nobs1,replace=FALSE)
-      # x1perm <- dataall[s,]
-      # x2perm <- dataall[b[-s], ]
-      
       # Include variance check
       okay <- FALSE
       counter <- 0
@@ -306,16 +306,32 @@ NCT <- function(data1, data2,
     
     # If paired data
     if(paired==TRUE)
+      
     {
-      if (verbose) message("Note: NCT for dependent data has not been validated.")
-      s <- sample(c(1,2),nobs1,replace=TRUE)
-      x1perm <- x1[s==1,]
-      x1perm <- rbind(x1perm,x2[s==2,])
-      x2perm <- x2[s==1,]
-      x2perm <- rbind(x2perm,x1[s==2,])
+      # Include variance check
+      okay <- FALSE
+      counter <- 0
       
-      # To do: add variance check for paired data
-      
+      if(binary.data) { # if binary data we need to resample the permutation to ensure mininum required variance for glmnet
+        while(okay == FALSE) {
+                    s <- sample(c(1,2),nobs1,replace=TRUE)
+          x1perm <- x1[s==1,]
+          x1perm <- rbind(x1perm,x2[s==2,])
+          x2perm <- x2[s==1,]
+          x2perm <- rbind(x2perm,x1[s==2,])
+          
+          # check glmnet requirement: at least two instances of each category
+          ind <- all(apply(x1perm, 2,  function(x) min(c(sum(x==0), sum(x==1)))) > 1) & all(apply(x2perm, 2,  function(x) min(c(sum(x==0), sum(x==1)))) > 1)
+          if(ind) okay <- TRUE else counter <- counter + 1
+          
+        } # end: while
+      } else{
+        s <- sample(c(1,2),nobs1,replace=TRUE)
+        x1perm <- x1[s==1,]
+        x1perm <- rbind(x1perm,x2[s==2,])
+        x2perm <- x2[s==1,]
+        x2perm <- rbind(x2perm,x1[s==2,])
+      }
       
       # Estimate the networks:
       r1perm <- do.call(estimator,c(list(x1perm),estimatorArgs))
@@ -372,7 +388,6 @@ NCT <- function(data1, data2,
   #####      End permutations     #####
   #####################################
   
-  # browser()
   
   #####################################
   #####     Calculate p-values    #####
@@ -393,10 +408,9 @@ NCT <- function(data1, data2,
       rownames(corrpvals.all) <- colnames(corrpvals.all) <- colnames(x1)
       einv.pvals <- melt(corrpvals.all, na.rm=TRUE, value.name = 'p-value')
       einv.perm <- einv.perm.all
-      einv.real <- diffedges.realoutput
-      
-      edges.tested <- "all"
-      
+      einv.real <- diffedges.realoutput 
+      einv.pvals <- cbind(einv.pvals, round(einv.real[upper.tri(einv.real)],8))
+      colnames(einv.pvals) <- c('Var1', 'Var2', 'p-value', "Test statistic E")
     }
     
     ## If a selection of edges should be tested
@@ -424,10 +438,9 @@ NCT <- function(data1, data2,
       corrpvals_mat[,3] <- corrpvals
       corrpvals_mat[,1:2] <- pairs
       einv.pvals <- as.data.frame(corrpvals_mat)
-      colnames(einv.pvals) <- c('Var1', 'Var2', 'p-value')
+      einv.pvals <- cbind(einv.pvals, einv.real)
+      colnames(einv.pvals) <- c('Var1', 'Var2', 'p-value', "Test statistic E")
     }
-    
-    edges.tested <- colnames(einv.perm)
     
     res <- list(glstrinv.real = glstrinv.real,
                 glstrinv.sep = glstrinv.sep,
@@ -436,7 +449,6 @@ NCT <- function(data1, data2,
                 nwinv.real = nwinv.real,
                 nwinv.pval = (sum(nwinv.perm >= nwinv.real) + 1) / (it + 1), 
                 nwinv.perm = nwinv.perm,
-                edges.tested = edges.tested,
                 einv.real = einv.real,
                 einv.pvals = einv.pvals,
                 einv.perm = einv.perm, 

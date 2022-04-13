@@ -46,10 +46,11 @@ summary.NCT <- function(object,...){
       "\n p-value", object$nwinv.pval,
       global_stat_message, object$glstrinv.sep,
       "\n Test statistic S: ", object$glstrinv.real,
-      "\n p-value", object$glstrinv.pval,
-      "\n\n EDGE INVARIANCE TEST \n Edges tested:", object$edges.tested,
-      "\n Test statistic E:", object$einv.real,
-      "\n p-value:", object$einv.pvals$`p-value`)
+      "\n p-value", object$glstrinv.pval)
+  if(object$info$call$test.edges){
+    cat("\n\n EDGE INVARIANCE TEST \n")
+    print(object$einv.pvals) 
+  }
   if(object$info$call$test.centrality){
     cenTest <- c(reshape2::melt(object$diffcen.real)$value,
                  reshape2::melt(object$diffcen.pval)$value)  

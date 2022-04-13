@@ -13,6 +13,4 @@ importFrom("utils", "setTxtProgressBar", "txtProgressBar")
 importFrom("Matrix", "nearPD")
 importFrom("reshape2","melt")
 importFrom("stats", "na.omit")
-
-
 importFrom("methods", "is")
