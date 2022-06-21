@@ -14,7 +14,7 @@ print.NCT <- function(x,...){
     print(x$einv.pvals) 
   }
   if(x$info$call$test.centrality){
-    cat("\n CENTRALITY INVARIANCE TEST \n")
+    cat("\n CENTRALITY INVARIANCE TEST p-value\n")
     print(x$diffcen.pval)
   }
 }
