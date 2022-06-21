@@ -195,6 +195,7 @@ NCT <- function(data1, data2,
   
   #####################################
   ###    procedure for all data     ###
+  
   #####################################
   
   # Estimate the networks:
@@ -257,24 +258,16 @@ NCT <- function(data1, data2,
   #####################################
   #####     Start permutations    #####
   #####################################
-==== BASE ====
-  
-  for (i in 1:it)
-  {
-    diffedges.permtemp <- matrix(0, nvars, nvars)
-==== BASE ====
+  if (nCores == 1) {
+
+    glstrinv.perm <- nwinv.perm <- c()
+    diffedges.perm <- matrix(0,it,nedges) 
+    einv.perm.all <- array(NA,dim=c(nvars, nvars, it))
+    diffcen.perm <- matrix(NA, it, nnodes*length(centrality))
     
     for (i in 1:it)
     {
-==== BASE ====
-      # s <- sample(1:(nobs1+nobs2),nobs1,replace=FALSE)
-      # x1perm <- dataall[s,]
-      # x2perm <- dataall[b[-s], ]
-      
-      # Include variance check
-      okay <- FALSE
-      counter <- 0
-==== BASE ====
+      diffedges.permtemp <- matrix(0, nvars, nvars)
       
       # If not paired data
       if(paired==FALSE)
@@ -345,24 +338,13 @@ NCT <- function(data1, data2,
           r2perm=(r2perm!=0)*1
         }
       }
-==== BASE ====
-    }
-    
-    # If paired data
-    if(paired==TRUE)
-    {
-      if (verbose) message("Note: NCT for dependent data has not been validated.")
-      s <- sample(c(1,2),nobs1,replace=TRUE)
-      x1perm <- x1[s==1,]
-      x1perm <- rbind(x1perm,x2[s==2,])
-      x2perm <- x2[s==1,]
-      x2perm <- rbind(x2perm,x1[s==2,])
       
-      # To do: add variance check for paired data
-==== BASE ====
-      
-==== BASE ====
-==== BASE ====
+      ## Invariance measures for permuted data
+      if(abs){
+        glstrinv.perm[i] <- abs(sum(abs(r1perm[upper.tri(r1perm)]))-sum(abs(r2perm[upper.tri(r2perm)])))
+      } else {
+        glstrinv.perm[i] <- abs(sum(r1perm[upper.tri(r1perm)])-sum(r2perm[upper.tri(r2perm)]))
+      }
       
       diffedges.perm[i,] <- abs(r1perm-r2perm)[upper.tri(abs(r1perm-r2perm))]
       diffedges.permtemp[upper.tri(diffedges.permtemp, diag=FALSE)] <- diffedges.perm[i,]
@@ -538,6 +520,9 @@ NCT <- function(data1, data2,
   #####################################
   #####      End permutations     #####
   #####################################
+
+  # browser()
+
   
   #####################################
   #####     Calculate p-values    #####
@@ -558,9 +543,10 @@ NCT <- function(data1, data2,
       rownames(corrpvals.all) <- colnames(corrpvals.all) <- colnames(x1)
       einv.pvals <- melt(corrpvals.all, na.rm=TRUE, value.name = 'p-value')
       einv.perm <- einv.perm.all
-      einv.real <- diffedges.realoutput 
-      einv.pvals <- cbind(einv.pvals, round(einv.real[upper.tri(einv.real)],8))
-      colnames(einv.pvals) <- c('Var1', 'Var2', 'p-value', "Test statistic E")
+      einv.real <- diffedges.realoutput
+      
+      edges.tested <- "all"
+      
     }
     
     ## If a selection of edges should be tested
@@ -588,9 +574,10 @@ NCT <- function(data1, data2,
       corrpvals_mat[,3] <- corrpvals
       corrpvals_mat[,1:2] <- pairs
       einv.pvals <- as.data.frame(corrpvals_mat)
-      einv.pvals <- cbind(einv.pvals, einv.real)
-      colnames(einv.pvals) <- c('Var1', 'Var2', 'p-value', "Test statistic E")
+      colnames(einv.pvals) <- c('Var1', 'Var2', 'p-value')
     }
+    
+    edges.tested <- colnames(einv.perm)
     
     res <- list(glstrinv.real = glstrinv.real,
                 glstrinv.sep = glstrinv.sep,
@@ -599,6 +586,7 @@ NCT <- function(data1, data2,
                 nwinv.real = nwinv.real,
                 nwinv.pval = (sum(nwinv.perm >= nwinv.real) + 1) / (it + 1), 
                 nwinv.perm = nwinv.perm,
+                edges.tested = edges.tested,
                 einv.real = einv.real,
                 einv.pvals = einv.pvals,
                 einv.perm = einv.perm, 
