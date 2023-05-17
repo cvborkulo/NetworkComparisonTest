@@ -23,7 +23,8 @@ Imports:
     Matrix,
     methods
 Suggests:
-    networktools
+    networktools,
+    testthat (>= 3.0.0)
 Description: This permutation based hypothesis test, suited for several types of data 
     supported by the estimateNetwork function of the bootnet package (Epskamp & Fried, 2018), 
     assesses the difference between two networks based on several invariance measures (network 
@@ -35,3 +36,5 @@ Description: This permutation based hypothesis test, suited for several types of
     10.1037/met0000476).
 License: GPL-2
 RoxygenNote: 6.1.1
+Roxygen: list(markdown = TRUE)
+Config/testthat/edition: 3
