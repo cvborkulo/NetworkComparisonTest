@@ -6,7 +6,22 @@ Network approaches to psychometric constructs, in which constructs are modeled i
 
 This package facilitates this recent movements by providing the necessary methodological tools. The Network Comparison Test (NCT) uses resampling-based permutation testing to compare network structures from two independent, cross-sectional data sets on invariance of 1) network structure, 2) edge (connection) strength, and 3) global strength. 
 
-# Example
+## Installation 
+An older version of this package is available on CRAN. We are currently working on updating this version. You can also install this package from Github using: 
+
+```r
+install.packages("remotes")
+remotes::install_github("cvborkulo/NetworkComparisonTest")
+```
+
+To rather install the most up-to-date developer version, use
+
+```r
+install.packages("remotes")
+remotes::install_github("cvborkulo/NetworkComparisonTest", ref = "developer")
+```
+
+## Example
 
 ```r
 library("IsingSampler")
@@ -44,13 +59,13 @@ plot(Res_1, what="strength")
 plot(Res_1, what="edge")
 ```
 
-# Background Information
+## Background Information
 For more information on the Network Comparison Test, take a look at:
 
 Van Borkulo, C. D., van Bork, R., Boschloo, L., Kossakowski, J. J., Tio, P., Schoevers, R. A., Borsboom, D., & Waldorp, L. J. (2022). Comparing network structures on three aspects: A permutation test. Psychological Methods. DOI: 10.1037/met0000476
 
-# Bug Reports, Feature Request, or Contributing
+## Bug Reports, Feature Request, or Contributing
 If you encounter any bugs or have ideas for new features, you can submit them by creating an issue on Github. Additionally, if you want to contribute to the development of NCT, you can initiate a branch with a pull request; we can review and discuss the proposed changes.
 
-# Credits
+## Credits
 The package was developed by [Claudia van Borkulo](https://cvborkulo.com/) during her PhD at the University of Amsterdam. It is now maintained by [Don van den Bergh](https://scholar.google.nl/citations?user=WbbKtuQAAAAJ&hl=en&oi=ao), a PostDoc at the University of Amsterdam, and [Karoline Huth](https://scholar.google.com/citations?user=_0707qYAAAAJ&hl=en), a PhD at the University of Amsterdam. 
