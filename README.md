@@ -51,3 +51,6 @@ Van Borkulo, C. D., van Bork, R., Boschloo, L., Kossakowski, J. J., Tio, P., Sch
 
 # Bug Reports, Feature Request, or Contributing
 If you encounter any bugs or have ideas for new features, you can submit them by creating an issue on Github. Additionally, if you want to contribute to the development of NCT, you can initiate a branch with a pull request; we can review and discuss the proposed changes.
+
+# Credits
+The package was developed by [Claudia van Borkulo](https://cvborkulo.com/) during her PhD at the University of Amsterdam. It is now maintained by [Don van den Bergh](https://scholar.google.nl/citations?user=WbbKtuQAAAAJ&hl=en&oi=ao), a PostDoc at the University of Amsterdam, and [Karoline Huth](https://scholar.google.com/citations?user=_0707qYAAAAJ&hl=en), a PhD at the University of Amsterdam. 
