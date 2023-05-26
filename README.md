@@ -1,6 +1,15 @@
 # NetworkComparisonTest
+
 Statistical comparison of two networks with respect to three invariance measures
 
-I am no longer working in academia. It was time for a change. ;-) To tackle most of the questions I get, I updated the NCT package and add example code of the new functionalities in the help file. 
-You can now use NCT in combination with the estimateNetwork() function. This enables using various network estimation methods (e.g., mgm). Also, you can find example code for assessing differences in various centrality measures (e.g., bridge centrality). You can find the most recent version on GitHub. This version will soon be uploaded to CRAN.
-For now, I will still be available for questions in case you get errors or something via cvborkulo@gmail.com. If your question needs a more involved answer, I might refer you to another expert. ;-)  
+Network approaches to psychometric constructs, in which constructs are modeled in terms of interactions between their constituent factors, have rapidly gained popularity in psychology. Applications of such network approaches to various psychological constructs have moved from a descriptive stance, in which the goal is to estimate the network structure that pertains to a construct, to a more comparative stance, in which the goal is to compare network structures across populations. 
+
+This package facilitates this recent movements by providing the necessary methodological tools. The Network Comparison Test (NCT) uses resampling-based permutation testing to compare network structures from two independent, cross-sectional data sets on invariance of 1) network structure, 2) edge (connection) strength, and 3) global strength. 
+
+# Background Information
+For more information on the Network Comparison Test, take a look at:
+
+Van Borkulo, C. D., van Bork, R., Boschloo, L., Kossakowski, J. J., Tio, P., Schoevers, R. A., Borsboom, D., & Waldorp, L. J. (2022). Comparing network structures on three aspects: A permutation test. Psychological Methods. DOI: 10.1037/met0000476
+
+# Bug Reports, Feature Request, or Contributing
+If you encounter any bugs or have ideas for new features, you can submit them by creating an issue on Github. Additionally, if you want to contribute to the development of NCT, you can initiate a branch with a pull request; we can review and discuss the proposed changes.
