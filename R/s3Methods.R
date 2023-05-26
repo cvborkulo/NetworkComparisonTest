@@ -1,4 +1,16 @@
-print.NCT <- function(x,...){
+#' Print method for NCT
+#'
+#' @description Print method, prints the NCT output, plot method plots the output, summary method returns a summary of the output.
+#'
+#' @name plot.NCT
+#'
+#' @param x output of NCT
+#' @param ... additional arguments 
+#'
+#' @export
+#'
+
+print.NCT <- function(x, ...){
   if(x$info$call$abs){
     global_stat_message = "\n\n GLOBAL STRENGTH INVARIANCE TEST \n Global strength per group: "
   } else {
@@ -19,6 +31,14 @@ print.NCT <- function(x,...){
   }
 }
 
+#' Summary method for NCT
+#'
+#' @param object output of NCT
+#' @param ... additional arguments 
+#'
+#' @export
+#'
+#' 
 summary.NCT <- function(object,...){
   if(object$info$call$abs){
     global_stat_message = "\n\n GLOBAL STRENGTH INVARIANCE TEST \n Global strength per group: "
@@ -63,6 +83,15 @@ summary.NCT <- function(object,...){
   }
 }
 
+#' Plot method for NCT
+#'
+#' @param x output of NCT
+#' @param what defines what has to be plotted: results pertaining to test on invariance of global strength ("strength"), network structure ("network"), edge strength ("edge"), or specific centrality measure ("centrality")
+#' @param ... additional arguments
+#'
+#' @export
+#'
+#' 
 plot.NCT <- function(x,what = c("strength","network","edge","centrality"),...){
   
   what <- match.arg(what)
