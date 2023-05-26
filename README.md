@@ -18,7 +18,7 @@ To rather install the most up-to-date developer version, use
 
 ```r
 install.packages("remotes")
-remotes::install_github("cvborkulo/NetworkComparisonTest", ref = "developer")
+remotes::install_github("cvborkulo/NetworkComparisonTest", ref = "development")
 ```
 
 ## Example
