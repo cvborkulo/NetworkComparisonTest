@@ -3,8 +3,10 @@
 on:
   push:
     branches: [main, master, development]
+    paths: ['**.R', 'tests/**', '**.Rd', '**.c', '**.cpp', '**.h', '**.hpp', 'DESCRIPTION', 'NAMESPACE', 'MAKEVARS', 'MAKEVARS.win', '**.yml']
   pull_request:
     branches: [main, master, development]
+    paths: ['**.R', 'tests/**', '**.Rd', '**.c', '**.cpp', '**.h', '**.hpp', 'DESCRIPTION', 'NAMESPACE', 'MAKEVARS', 'MAKEVARS.win', '**.yml']
 
 name: R-CMD-check
 
