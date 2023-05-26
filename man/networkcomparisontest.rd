@@ -2,10 +2,10 @@
 \alias{NetworkComparisonTest}
 \alias{NCT}
 \title{
-Statistical Comparison of Two Networks Based on Several Invariance Measures
+Statistical Comparison of Two Networks Based on Three Invariance Measures
 }
 \description{
-This permutation based hypothesis test, suited for several types of data supported by the estimateNetwork function of the bootnet package (Epskamp & Fried, 2018), assesses the difference between two networks based on several invariance measures (network structure invariance, global strength invariance, edge invariance, several centrality measures, etc.). Network structures are estimated with l1-regularization. The Network Comparison Test is suited for comparison of independent (e.g., two different groups) and dependent samples (e.g., one group that is measured twice).
+This permutation based hypothesis test, suited for gaussian and binary data, assesses the difference between two networks based on several invariance measures (network structure invariance, global strength invariance, edge invariance). Network structures are estimated with l1-regularized partial correlations (gaussian data) or with l1-regularized logistic regression (eLasso, binary data). Suited for comparison of independent and dependent samples. For dependent samples, only supported for data of one group which is measured twice.
 }
 \usage{
 NCT(data1, data2, 
@@ -19,7 +19,8 @@ NCT(data1, data2,
       centrality=c("strength","expectedInfluence"),nodes="all",
       communities=NULL,useCommunities="all",
       estimator, estimatorArgs = list(), 
-      verbose = TRUE)
+      verbose = TRUE, 
+      nCores = 1)
 }
 
 \arguments{
@@ -36,7 +37,7 @@ A single value between 0 and 1. When not entered, gamma is set to 0.25 for binar
 The number of iterations (permutations).
 }
   \item{binary.data}{
-Logical. Can be TRUE or FALSE to indicate whether the data is binary or not. If binary.data is FALSE, the data is regarded gaussian. This argument is ignored when using estimateNetwork() output as input for NCT.
+Logical. Can be TRUE or FALSE to indicate whether the data is binary or not. If binary.data is FALSE, the data is regarded gaussian.
 }
   \item{paired}{
 Logical. Can be TRUE of FALSE to indicate whether the samples are dependent or not. If paired is TRUE, relabeling is performed within each pair of observations. If paired is FALSE, relabeling is not restricted to pairs of observations. Note that, currently, dependent data is assumed to entail one group measured twice.
@@ -57,7 +58,7 @@ Logical. Can be TRUE of FALSE to indicate whether or not differences in individu
 Character or list. When 'all', differences between all individual edges are tested. When provided a list with one or more pairs of indices referring to variables, the provided edges are tested.
 }
   \item{progressbar}{
-Logical. Should the pbar be plotted in order to see the progress of the estimation procedure? Defaults to TRUE.
+Logical. Should the pbar be plotted in order to see the progress of the estimation procedure? Defaults to TRUE. Not supported when using parallel computing (nCores > 1).
 }
   \item{make.positive.definite}{
 If \code{make.positive.definite = TRUE}, the covariance matrices used for the glasso are projected to the nearest positive definite matrices, if they are not yet positive definite. This is useful for small n, for which it is very likely that at least one of the bootstrap comparisons involves a covariance matrix that is not positive definite.
@@ -89,7 +90,7 @@ A function that takes data as input and returns a network structure. This can be
 Arguments to the \code{estimator} function
 }
 \item{verbose}{Logical: Should some warnings and notes be printed?}
-
+\item{nCores}{Number of cores to use in computing results. Set to 1 to not use parallel computing.}
 }
 
 
@@ -104,6 +105,7 @@ NCT returns a 'NCT' object that contains the following items:
 \item{nwinv.perm}{The values of the maximum difference in edge weights of the permuted networks}
 \item{nwinv.pval }{The p value resulting from the permutation test concerning the maximum difference in edge weights.}
 \item{einv.pvals}{p-values (corrected for multiple testing or not according to 'p.adjust.methods') per edge from the permutation test concerning differences in edges weights. Only returned if test.edges = TRUE.}
+\item{edges.tested}{The pairs of variables between which the edges are called to be tested. Only if test.edges = TRUE.}
 \item{einv.real}{The value of the difference in edge weight of the observed networks (multiple values if more edges are called to test). Only if test.edges = TRUE.}
 \item{einv.perm}{The values of the difference in edge weight of the permuted networks. Only if test.edges = TRUE.}
 \item{diffcen.real}{The values of the difference in centralities of the observed networks. Only if test.centrality = TRUE.}
@@ -118,7 +120,7 @@ Good, P.I. Permutation, parametric and bootstrap tests of hypotheses. Vol. 3. Ne
 
 van Borkulo, C. D., Boschloo, L., Borsboom, D., Penninx, B. W. J. H., Waldorp, L. J., & Schoevers, R.A. (2015). Association of symptom network structure with the course of depression. JAMA Psychiatry. 2015;72(12). doi:10.1001/jamapsychiatry.2015.2079
 
-van Borkulo, C. D., van Bork, R., Boschloo, Kossakowski, J., Tio, P., L., Schoevers, R.A., Borsboom, D., & , Waldorp, L. J. (2021). Comparing network structures on three aspects: A permutation test. DOI: 10.1037/met0000476
+van Borkulo, C. D., Boschloo, Kossakowski, J., Tio, P., L., Schoevers, R.A., Borsboom, D., & , Waldorp, L. J. (2016). Comparing network structures on three aspects: A permutation test. doi:10.13140/RG.2.2.29455.38569
 }
 \author{
 Claudia D. van Borkulo, with contributions from Jonas Haslbeck, Sacha Epskamp, Payton Jones and Alex Millner
@@ -132,24 +134,16 @@ See also my website: http://cvborkulo.com
 \examples{
 library("IsingSampler")
 library("IsingFit")
-library("bootnet")
 
 ### Simulate binary datasets under null hypothesis:
-### underlying network structures are similar
+### underlying network structures have the same strength 
 # Input:
 N <- 6 # Number of nodes
 nSample <- 500 # Number of samples
 
 # Ising parameters:
-set.seed(123)
 Graph <- matrix(sample(0:1,N^2,TRUE,prob = c(0.8, 0.2)),N,N) * runif(N^2,0.5,2)
 Graph <- pmax(Graph,t(Graph))
-Graph[4,1] <- Graph[4,1]*-1
-Graph[1,4] <- Graph[1,4]*-1
-Graph[5,1] <- Graph[5,1]*-1
-Graph[1,5] <- Graph[1,5]*-1
-Graph[6,1] <- Graph[6,1]*-1
-Graph[1,6] <- Graph[1,6]*-1
 diag(Graph) <- 0
 Thresh <- -rowSums(Graph) / 2
 
@@ -159,62 +153,33 @@ data2 <- IsingSampler(nSample, Graph, Thresh)
 colnames(data1) <- colnames(data2) <- c('V1', 'V2', 'V3', 'V4', 'V5', 'V6')
 
 ### Compare networks of data sets using NCT ###
-## Networks can be compared by either (1) feeding the data directly into NCT (whereby 
-## you need to specify arguments such as "gamma" and "binary.data") or (2) by using 
-## estimateNetwork() (bootnet package) and feeding that output into NCT. For the latter 
-## option, we refer to the help file of  estimateNetwork() for its usage. Below, both 
-## options are illustrated. We recommend using estimateNetwork(), since this function 
-## has implemented many network estimation methods.
+# with gamma = 0. 
+# Iterations (it) set to 10 to save time.
+# Low number of iterations can give unreliable results. Should be 1000 at least.
 
-## gamma = 0 (in estimateNetwork this hyperparameter is called "tuning"; to illustrate 
-# how to specify a different value than the default)
-## iterations (it) set to 10 to save time
-## Note: Low number of iterations can give unreliable results; should be 1000 at least
+# Testing the three aspects that are validated (network invariance, global strength, edge weight)
+# 2 edges are tested here: between variable 1 and 2, 
+# and between 3 and 6 (can be list(c(2,1),c(6,3)) as well)
+Res_1 <- NCT(data1, data2, gamma=0, it=10, binary.data = TRUE, 
+test.edges=TRUE, edges=list(c(1,2),c(3,6)))
 
-## Testing whether there are differences in the three aspects that are validated 
-# (network invariance, global strength, edge weight)
-## 2 edges are tested here: between variable 1 and 2, and between 3 and 6 (can be 
-# "list(c(2,1),c(6,3))" as well)
+## Plotting of NCT results
+## See the help file of plot.NCT for more information about the plotting function and its arguments
 
-## (1) Feeding data directly into NCT
-set.seed(123)
-NCT_a <- NCT(data1, data2, gamma=0, it=10, binary.data = TRUE, 
-             test.edges=TRUE, edges=list(c(1,2),c(3,6)))
-summary(NCT_a)
-## Plot results of global strength invariance test (not reliable with only 10 
-# permutations!)
-plot(NCT_a, what="strength")
+# Plot results of the network structure invariance test (not reliable with only 10 permutations!):
+plot(Res_1, what="network")
 
-## (2) Feeding the estimateNetwork() output into NCT
-est_1 <- estimateNetwork(data1, default = "IsingFit", tuning = 0)
-est_2 <- estimateNetwork(data2, default = "IsingFit", tuning = 0)
-## When using estimateNetwork() output, there is no need to specify gamma and binary.data 
-## This yields similar output as NCT_a
-set.seed(123)
-NCT_b <- NCT(est_1, est_2, it=10, test.edges=TRUE, 
-edges=list(c(1,2),c(3,6)))
-summary(NCT_b)
+# Plot results of global strength invariance test (not reliable with only 10 permutations!):
+plot(Res_1, what="strength")
 
-## Next, an example of testing whether there are differences in node strength 
-# when data is paired (e.g., a group which is measured pre- and post-treatement). 
-# Also, here you can see how to specify that you want to take the sign of node strength 
-# into account (by default, the absolute value is taken and, therefore, the sign is 
-# ignored).
+# Plot results of the edge invariance test (not reliable with only 10 permutations!):
+# Note that two distributions are plotted
+plot(Res_1, what="edge")
 
-## abs = FALSE
-set.seed(123)
-NCT_c = NCT(est_1, est_2, paired = TRUE, abs = FALSE, test.edges = TRUE, 
-edges = list(c(1,2),c(3,6)), test.centrality = TRUE, 
-centrality = c("strength"), nodes = "all", it=10)
-summary(NCT_c)
-
-## Finally, an example how to test for differences in centrality (e.g., expectedInfluence)
-
-set.seed(123)
-NCT_d = NCT(est_1, est_2, paired = TRUE, abs = FALSE, test.edges = TRUE, 
-edges = list(c(1,2),c(3,6)), test.centrality = TRUE, 
-centrality = c("expectedInfluence"), nodes = "all", it=10)
-summary(NCT_d)
+# Without testing for (an) individual edge(s)
+# The arguments 'test.edges' and 'edges' don't need to be specified
+# Not run
+# Res_0 <- NCT(data1, data2, gamma=0, it=10, binary.data = TRUE)
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.

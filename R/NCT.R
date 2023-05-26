@@ -9,7 +9,8 @@ NCT <- function(data1, data2,
                 centrality=c("strength","expectedInfluence"),nodes="all",
                 communities=NULL,useCommunities="all",
                 estimator, estimatorArgs = list(), 
-                verbose = TRUE){ 
+                verbose = TRUE,
+                nCores = 1){ 
   
   # store function call, including default arguments not explicitly set - credit to Neal Fultz
   match.call.defaults <- function(...) {
@@ -48,6 +49,12 @@ NCT <- function(data1, data2,
   
   # Fix for networktools example:
   if (missing(edges)) edges <- "all"
+  
+  #progressbar isn't supported when using parallel computing
+  if (progressbar & nCores > 1){
+    message("Note: Progress bar isn't supported when using parallel computing.")
+    }
+
   
   # Small test to warn people of arguments that are ignored if the input is a bootnet object:
   # Test for bootnet objects:
@@ -148,7 +155,7 @@ NCT <- function(data1, data2,
   }
   
   
-  if (progressbar==TRUE) pb <- txtProgressBar(max=it, style = 3)
+  if (progressbar==TRUE) {pb <- txtProgressBar(max=it, style = 3)} 
   x1 <- data1
   x2 <- data2
   nobs1 <- nrow(x1)
@@ -171,13 +178,10 @@ NCT <- function(data1, data2,
     }
   }
   
-  glstrinv.perm <- glstrinv.real <- nwinv.real <- nwinv.perm <- c()
-  diffedges.perm <- matrix(0,it,nedges) 
-  einv.perm.all <- array(NA,dim=c(nvars, nvars, it))
-  corrpvals.all <- matrix(NA,nvars,nvars)
-  edges.pvalmattemp <- matrix(0,nvars,nvars)
-  
-  
+  glstrinv.real <- nwinv.real <- c()
+  corrpvals.all <- matrix(NA,nvars,nvars) 
+  edges.pvalmattemp <- matrix(0,nvars,nvars) 
+
   validCentrality <- c("closeness", "betweenness", 
                        "strength", "expectedInfluence", "bridgeStrength", 
                        "bridgeCloseness", "bridgeBetweenness", "bridgeExpectedInfluence")
@@ -188,10 +192,10 @@ NCT <- function(data1, data2,
   }else {
     centrality
   }
-  diffcen.perm <- matrix(NA, it, nnodes*length(centrality))
   
   #####################################
   ###    procedure for all data     ###
+  
   #####################################
   
   # Estimate the networks:
@@ -254,140 +258,271 @@ NCT <- function(data1, data2,
   #####################################
   #####     Start permutations    #####
   #####################################
-  # warning when paired data is compared
-  if(paired==TRUE)
-  {
-    if (verbose) message("Note: NCT for dependent data has not been validated.")
-  }
-  
-  for (i in 1:it)
-  {
-    diffedges.permtemp <- matrix(0, nvars, nvars)
+  if (nCores == 1) {
+
+    glstrinv.perm <- nwinv.perm <- c()
+    diffedges.perm <- matrix(0,it,nedges) 
+    einv.perm.all <- array(NA,dim=c(nvars, nvars, it))
+    diffcen.perm <- matrix(NA, it, nnodes*length(centrality))
     
-    # If not paired data
-    if(paired==FALSE)
+    for (i in 1:it)
     {
-      # Include variance check
-      okay <- FALSE
-      counter <- 0
+      diffedges.permtemp <- matrix(0, nvars, nvars)
       
-      if(binary.data) { # if binary data we need to resample the permutation to ensure mininum required variance for glmnet
-        while(okay == FALSE) {
-          
-          # Permute
+      # If not paired data
+      if(paired==FALSE)
+      {
+        # s <- sample(1:(nobs1+nobs2),nobs1,replace=FALSE)
+        # x1perm <- dataall[s,]
+        # x2perm <- dataall[b[-s], ]
+        
+        # Include variance check
+        okay <- FALSE
+        counter <- 0
+        
+        if(binary.data) { # if binary data we need to resample the permutation to ensure mininum required variance for glmnet
+          while(okay == FALSE) {
+            
+            # Permute
+            s <- sample(1:(nobs1+nobs2),nobs1,replace=FALSE)
+            x1perm <- dataall[s,]
+            x2perm <- dataall[b[-s], ]
+            
+            # check glmnet requirement: at least two instances of each category
+            ind <- all(apply(x1perm, 2,  function(x) min(c(sum(x==0), sum(x==1)))) > 1) & all(apply(x2perm, 2,  function(x) min(c(sum(x==0), sum(x==1)))) > 1)
+            if(ind) okay <- TRUE else counter <- counter + 1
+            
+          } # end: while
+        } else{
           s <- sample(1:(nobs1+nobs2),nobs1,replace=FALSE)
           x1perm <- dataall[s,]
           x2perm <- dataall[b[-s], ]
-          
-          # check glmnet requirement: at least two instances of each category
-          ind <- all(apply(x1perm, 2,  function(x) min(c(sum(x==0), sum(x==1)))) > 1) & all(apply(x2perm, 2,  function(x) min(c(sum(x==0), sum(x==1)))) > 1)
-          if(ind) okay <- TRUE else counter <- counter + 1
-          
-        } # end: while
-      } else{
-        s <- sample(1:(nobs1+nobs2),nobs1,replace=FALSE)
-        x1perm <- dataall[s,]
-        x2perm <- dataall[b[-s], ]
+        }
+        
+        
+        # Estimate the networks:
+        r1perm <- do.call(estimator,c(list(x1perm),estimatorArgs))
+        if (is.list(r1perm)) r1perm <- r1perm$graph
+        
+        r2perm <- do.call(estimator,c(list(x2perm),estimatorArgs))
+        if (is.list(r2perm)) r2perm <- r2perm$graph
+        
+        if(weighted==FALSE){
+          r1perm=(r1perm!=0)*1
+          r2perm=(r2perm!=0)*1
+        }
       }
       
-      
-      # Estimate the networks:
-      r1perm <- do.call(estimator,c(list(x1perm),estimatorArgs))
-      if (is.list(r1perm)) r1perm <- r1perm$graph
-      
-      r2perm <- do.call(estimator,c(list(x2perm),estimatorArgs))
-      if (is.list(r2perm)) r2perm <- r2perm$graph
-      
-      if(weighted==FALSE){
-        r1perm=(r1perm!=0)*1
-        r2perm=(r2perm!=0)*1
-      }
-    }
-    
-    # If paired data
-    if(paired==TRUE)
-      
-    {
-      # Include variance check
-      okay <- FALSE
-      counter <- 0
-      
-      if(binary.data) { # if binary data we need to resample the permutation to ensure mininum required variance for glmnet
-        while(okay == FALSE) {
-                    s <- sample(c(1,2),nobs1,replace=TRUE)
-          x1perm <- x1[s==1,]
-          x1perm <- rbind(x1perm,x2[s==2,])
-          x2perm <- x2[s==1,]
-          x2perm <- rbind(x2perm,x1[s==2,])
-          
-          # check glmnet requirement: at least two instances of each category
-          ind <- all(apply(x1perm, 2,  function(x) min(c(sum(x==0), sum(x==1)))) > 1) & all(apply(x2perm, 2,  function(x) min(c(sum(x==0), sum(x==1)))) > 1)
-          if(ind) okay <- TRUE else counter <- counter + 1
-          
-        } # end: while
-      } else{
+      # If paired data
+      if(paired==TRUE)
+      {
+        if (verbose) message("Note: NCT for dependent data has not been validated.")
         s <- sample(c(1,2),nobs1,replace=TRUE)
         x1perm <- x1[s==1,]
         x1perm <- rbind(x1perm,x2[s==2,])
         x2perm <- x2[s==1,]
         x2perm <- rbind(x2perm,x1[s==2,])
+        
+        # To do: add variance check for paired data
+        
+        
+        # Estimate the networks:
+        r1perm <- do.call(estimator,c(list(x1perm),estimatorArgs))
+        if (is.list(r1perm)) r1perm <- r1perm$graph
+        
+        r2perm <- do.call(estimator,c(list(x2perm),estimatorArgs))
+        if (is.list(r2perm)) r2perm <- r2perm$graph
+        
+        if(weighted==FALSE){
+          r1perm=(r1perm!=0)*1
+          r2perm=(r2perm!=0)*1
+        }
       }
       
-      # Estimate the networks:
-      r1perm <- do.call(estimator,c(list(x1perm),estimatorArgs))
-      if (is.list(r1perm)) r1perm <- r1perm$graph
-      
-      r2perm <- do.call(estimator,c(list(x2perm),estimatorArgs))
-      if (is.list(r2perm)) r2perm <- r2perm$graph
-      
-      if(weighted==FALSE){
-        r1perm=(r1perm!=0)*1
-        r2perm=(r2perm!=0)*1
-      }
-    }
-    
-    ## Invariance measures for permuted data
-    if(abs){
-      glstrinv.perm[i] <- abs(sum(abs(r1perm[upper.tri(r1perm)]))-sum(abs(r2perm[upper.tri(r2perm)])))
-    } else {
-      glstrinv.perm[i] <- abs(sum(r1perm[upper.tri(r1perm)])-sum(r2perm[upper.tri(r2perm)]))
-    }
-    
-    diffedges.perm[i,] <- abs(r1perm-r2perm)[upper.tri(abs(r1perm-r2perm))]
-    diffedges.permtemp[upper.tri(diffedges.permtemp, diag=FALSE)] <- diffedges.perm[i,]
-    diffedges.permtemp <- diffedges.permtemp + t(diffedges.permtemp)
-    einv.perm.all[,,i] <- diffedges.permtemp
-    nwinv.perm[i] <- max(diffedges.perm[i,])
-    
-    
-    if(test.centrality==TRUE){
-      cen1permtemp <- centrality_auto(r1perm)$node.centrality
-      cen2permtemp <- centrality_auto(r2perm)$node.centrality
-      names(cen1permtemp) <- names(cen2permtemp) <- c("betweenness","closeness","strength","expectedInfluence")
-      if(TRUE %in% (bridgecen %in% centrality)){
-        b1permtemp <- networktools::bridge(r1perm, communities=communities, useCommunities=useCommunities)
-        b2permtemp <- networktools::bridge(r2perm, communities=communities, useCommunities=useCommunities)
-        names(b1permtemp) <- names(b2permtemp) <- c(bridgecen, "bridgeExpectedInfluence2step", 
-                                                    "communities")
-        b1permtemp$communities <- b2permtemp$communities <- NULL
-        cen1permtemp <- data.frame(c(cen1permtemp,b1permtemp))
-        cen2permtemp <- data.frame(c(cen2permtemp,b2permtemp))
-      }
-      diffcen.permtemp <- as.matrix(cen1permtemp) - as.matrix(cen2permtemp)
-      if(nodes[1]=="all"){
-        diffcen.perm[i,] <- reshape2::melt(diffcen.permtemp[,centrality])$value
+      ## Invariance measures for permuted data
+      if(abs){
+        glstrinv.perm[i] <- abs(sum(abs(r1perm[upper.tri(r1perm)]))-sum(abs(r2perm[upper.tri(r2perm)])))
       } else {
-        diffcen.perm[i,] <- reshape2::melt(diffcen.permtemp[which(nodes%in%colnames(data1)),centrality])$value
-      } 
+        glstrinv.perm[i] <- abs(sum(r1perm[upper.tri(r1perm)])-sum(r2perm[upper.tri(r2perm)]))
+      }
+      
+      diffedges.perm[i,] <- abs(r1perm-r2perm)[upper.tri(abs(r1perm-r2perm))]
+      diffedges.permtemp[upper.tri(diffedges.permtemp, diag=FALSE)] <- diffedges.perm[i,]
+      diffedges.permtemp <- diffedges.permtemp + t(diffedges.permtemp)
+      einv.perm.all[,,i] <- diffedges.permtemp
+      nwinv.perm[i] <- max(diffedges.perm[i,])
+      
+      
+      if(test.centrality==TRUE){
+        cen1permtemp <- centrality_auto(r1perm)$node.centrality
+        cen2permtemp <- centrality_auto(r2perm)$node.centrality
+        names(cen1permtemp) <- names(cen2permtemp) <- c("betweenness","closeness","strength","expectedInfluence")
+        if(TRUE %in% (bridgecen %in% centrality)){
+          b1permtemp <- networktools::bridge(r1perm, communities=communities, useCommunities=useCommunities)
+          b2permtemp <- networktools::bridge(r2perm, communities=communities, useCommunities=useCommunities)
+          names(b1permtemp) <- names(b2permtemp) <- c(bridgecen, "bridgeExpectedInfluence2step", 
+                                                      "communities")
+          b1permtemp$communities <- b2permtemp$communities <- NULL
+          cen1permtemp <- data.frame(c(cen1permtemp,b1permtemp))
+          cen2permtemp <- data.frame(c(cen2permtemp,b2permtemp))
+        }
+        diffcen.permtemp <- as.matrix(cen1permtemp) - as.matrix(cen2permtemp)
+        if(nodes[1]=="all"){
+          diffcen.perm[i,] <- reshape2::melt(diffcen.permtemp[,centrality])$value
+        } else {
+          diffcen.perm[i,] <- reshape2::melt(diffcen.permtemp[which(nodes%in%colnames(data1)),centrality])$value
+        } 
+      }
+      
+        
+      if (progressbar==TRUE) setTxtProgressBar(pb, i)
     }
+  } else if (nCores > 1) {
     
+    #####################################
+    ##### Start Parallel permutations ###
+    #####################################
     
-    if (progressbar==TRUE) setTxtProgressBar(pb, i)
+    glstrinv.perm <- nwinv.perm <- bigstatsr::FBM(nrow = it,ncol = 1)
+    diffedges.perm <- bigstatsr::as_FBM(matrix(0,it,nedges))
+    einv.perm.all <- bigstatsr::as_FBM(matrix(NA,nvars^2, it))
+    diffcen.perm <- bigstatsr::as_FBM(matrix(NA, it, nnodes*length(centrality)))
+    
+    nClust <- nCores - 1
+    cl_temp <- parallelly::makeClusterPSOCK(workers = nClust,verbose = T)
+    doParallel::registerDoParallel(cl_temp)
+    
+    permResults <- foreach (i = 1:it,
+                            .errorhandling = "stop"
+                            ) %dopar% {
+  
+                              diffedges.permtemp <- matrix(0, nvars, nvars)
+                              
+                              # If not paired data
+                              if(paired==FALSE)
+                              {
+                                # s <- sample(1:(nobs1+nobs2),nobs1,replace=FALSE)
+                                # x1perm <- dataall[s,]
+                                # x2perm <- dataall[b[-s], ]
+                                
+                                # Include variance check
+                                okay <- FALSE
+                                counter <- 0
+                                
+                                if(binary.data) { # if binary data we need to resample the permutation to ensure mininum required variance for glmnet
+                                  while(okay == FALSE) {
+                                    
+                                    # Permute
+                                    s <- sample(1:(nobs1+nobs2),nobs1,replace=FALSE)
+                                    x1perm <- dataall[s,]
+                                    x2perm <- dataall[b[-s], ]
+                                    
+                                    # check glmnet requirement: at least two instances of each category
+                                    ind <- all(apply(x1perm, 2,  function(x) min(c(sum(x==0), sum(x==1)))) > 1) & all(apply(x2perm, 2,  function(x) min(c(sum(x==0), sum(x==1)))) > 1)
+                                    if(ind) okay <- TRUE else counter <- counter + 1
+                                    
+                                  } # end: while
+                                } else{
+                                  s <- sample(1:(nobs1+nobs2),nobs1,replace=FALSE)
+                                  x1perm <- dataall[s,]
+                                  x2perm <- dataall[b[-s], ]
+                                }
+                                
+                                
+                                # Estimate the networks:
+                                r1perm <- do.call(estimator,c(list(x1perm),estimatorArgs))
+                                if (is.list(r1perm)) r1perm <- r1perm$graph
+                                
+                                r2perm <- do.call(estimator,c(list(x2perm),estimatorArgs))
+                                if (is.list(r2perm)) r2perm <- r2perm$graph
+                                
+                                if(weighted==FALSE){
+                                  r1perm=(r1perm!=0)*1
+                                  r2perm=(r2perm!=0)*1
+                                }
+                              }
+                              
+                              # If paired data
+                              if(paired==TRUE)
+                              {
+                                if (verbose) message("Note: NCT for dependent data has not been validated.")
+                                s <- sample(c(1,2),nobs1,replace=TRUE)
+                                x1perm <- x1[s==1,]
+                                x1perm <- rbind(x1perm,x2[s==2,])
+                                x2perm <- x2[s==1,]
+                                x2perm <- rbind(x2perm,x1[s==2,])
+                                
+                                # To do: add variance check for paired data
+                                
+                                
+                                # Estimate the networks:
+                                r1perm <- do.call(estimator,c(list(x1perm),estimatorArgs))
+                                if (is.list(r1perm)) r1perm <- r1perm$graph
+                                
+                                r2perm <- do.call(estimator,c(list(x2perm),estimatorArgs))
+                                if (is.list(r2perm)) r2perm <- r2perm$graph
+                                
+                                if(weighted==FALSE){
+                                  r1perm=(r1perm!=0)*1
+                                  r2perm=(r2perm!=0)*1
+                                }
+                              }
+                              
+                              ## Invariance measures for permuted data
+                              if(abs){
+                                glstrinv.perm[i] <- abs(sum(abs(r1perm[upper.tri(r1perm)]))-sum(abs(r2perm[upper.tri(r2perm)])))
+                              } else {
+                                glstrinv.perm[i] <- abs(sum(r1perm[upper.tri(r1perm)])-sum(r2perm[upper.tri(r2perm)]))
+                              }
+                              
+                              diffedges.perm[i,] <- abs(r1perm-r2perm)[upper.tri(abs(r1perm-r2perm))]
+                              diffedges.permtemp[upper.tri(diffedges.permtemp, diag=FALSE)] <- diffedges.perm[i,]
+                              diffedges.permtemp <- diffedges.permtemp + t(diffedges.permtemp)
+                              einv.perm.all[,i] <- c(diffedges.permtemp)
+                              nwinv.perm[i] <- max(diffedges.perm[i,])
+                              
+                              if(test.centrality==TRUE){
+                                cen1permtemp <- centrality_auto(r1perm)$node.centrality
+                                cen2permtemp <- centrality_auto(r2perm)$node.centrality
+                                names(cen1permtemp) <- names(cen2permtemp) <- c("betweenness","closeness","strength","expectedInfluence")
+                                if(TRUE %in% (bridgecen %in% centrality)){
+                                  b1permtemp <- networktools::bridge(r1perm, communities=communities, useCommunities=useCommunities)
+                                  b2permtemp <- networktools::bridge(r2perm, communities=communities, useCommunities=useCommunities)
+                                  names(b1permtemp) <- names(b2permtemp) <- c(bridgecen, "bridgeExpectedInfluence2step", 
+                                                                              "communities")
+                                  b1permtemp$communities <- b2permtemp$communities <- NULL
+                                  cen1permtemp <- data.frame(c(cen1permtemp,b1permtemp))
+                                  cen2permtemp <- data.frame(c(cen2permtemp,b2permtemp))
+                                }
+                                diffcen.permtemp <- as.matrix(cen1permtemp) - as.matrix(cen2permtemp)
+                                if(nodes[1]=="all"){
+                                  diffcen.perm[i,] <- reshape2::melt(diffcen.permtemp[,centrality])$value
+                                } else {
+                                  diffcen.perm[i,] <- reshape2::melt(diffcen.permtemp[which(nodes%in%colnames(data1)),centrality])$value
+                                } 
+                              } else {
+                                diffcen.perm[i,] = NA
+                              }
+        
+          return(NULL)
+                            }
+    parallelly::autoStopCluster(cl_temp)
+    gc()
+    glstrinv.perm = as.numeric(glstrinv.perm[])
+    diffedges.perm = diffedges.perm[]
+    einv.perm.all <- `dim<-`(einv.perm.all[], c(nvars, nvars, it))
+    nwinv.perm = nwinv.perm[]
+    diffcen.perm = diffcen.perm[]
+    
   }
+
+  
   #####################################
   #####      End permutations     #####
   #####################################
-  
+
+  # browser()
+
   
   #####################################
   #####     Calculate p-values    #####
@@ -408,9 +543,10 @@ NCT <- function(data1, data2,
       rownames(corrpvals.all) <- colnames(corrpvals.all) <- colnames(x1)
       einv.pvals <- melt(corrpvals.all, na.rm=TRUE, value.name = 'p-value')
       einv.perm <- einv.perm.all
-      einv.real <- diffedges.realoutput 
-      einv.pvals <- cbind(einv.pvals, round(einv.real[upper.tri(einv.real)],8))
-      colnames(einv.pvals) <- c('Var1', 'Var2', 'p-value', "Test statistic E")
+      einv.real <- diffedges.realoutput
+      
+      edges.tested <- "all"
+      
     }
     
     ## If a selection of edges should be tested
@@ -438,9 +574,10 @@ NCT <- function(data1, data2,
       corrpvals_mat[,3] <- corrpvals
       corrpvals_mat[,1:2] <- pairs
       einv.pvals <- as.data.frame(corrpvals_mat)
-      einv.pvals <- cbind(einv.pvals, einv.real)
-      colnames(einv.pvals) <- c('Var1', 'Var2', 'p-value', "Test statistic E")
+      colnames(einv.pvals) <- c('Var1', 'Var2', 'p-value')
     }
+    
+    edges.tested <- colnames(einv.perm)
     
     res <- list(glstrinv.real = glstrinv.real,
                 glstrinv.sep = glstrinv.sep,
@@ -449,6 +586,7 @@ NCT <- function(data1, data2,
                 nwinv.real = nwinv.real,
                 nwinv.pval = (sum(nwinv.perm >= nwinv.real) + 1) / (it + 1), 
                 nwinv.perm = nwinv.perm,
+                edges.tested = edges.tested,
                 einv.real = einv.real,
                 einv.pvals = einv.pvals,
                 einv.perm = einv.perm, 
