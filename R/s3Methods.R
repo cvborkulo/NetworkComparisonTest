@@ -5,7 +5,7 @@
 #' @name plot.NCT
 #'
 #' @param x output of NCT
-#' @param ... additional arguments 
+#' @param ... for now ignored 
 #'
 #' @export
 #'
@@ -34,7 +34,7 @@ print.NCT <- function(x, ...){
 #' Summary method for NCT
 #'
 #' @param object output of NCT
-#' @param ... additional arguments 
+#' @param ... for now ignored 
 #'
 #' @export
 #'
@@ -87,7 +87,7 @@ summary.NCT <- function(object,...){
 #'
 #' @param x output of NCT
 #' @param what defines what has to be plotted: results pertaining to test on invariance of global strength ("strength"), network structure ("network"), edge strength ("edge"), or specific centrality measure ("centrality")
-#' @param ... additional arguments
+#' @param ... for now ignored
 #'
 #' @export
 #'

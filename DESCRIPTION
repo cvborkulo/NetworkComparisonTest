@@ -16,7 +16,8 @@ Imports:
     graphics,
     utils,
     Matrix,
-    methods
+    methods, 
+    reshape2
 Suggests:
     bootnet,
     qgraph,
