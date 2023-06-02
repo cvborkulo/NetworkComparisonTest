@@ -1,6 +1,6 @@
 # These are the two estimator functions based on code exactly as in the original NCT:
 NCT_estimator_Ising <- function(x, gamma = 0.25, AND = TRUE){
-  IF <- IsingFit(x, AND = AND, gamma=gamma, plot=FALSE, progressbar=FALSE)
+  IF <- IsingFit::IsingFit(x, AND = AND, gamma=gamma, plot=FALSE, progressbar=FALSE)
   IF$weiadj
 }
 

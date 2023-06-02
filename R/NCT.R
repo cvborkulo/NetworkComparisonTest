@@ -53,6 +53,7 @@
 #' @importFrom stats na.omit
 #' @importFrom methods is
 #' @import qgraph
+#' @import IsingFit
 #' @importFrom networktools bridge
 #' 
 #' 

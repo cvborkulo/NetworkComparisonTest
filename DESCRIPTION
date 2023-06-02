@@ -3,10 +3,10 @@ Type: Package
 Title: Statistical Comparison of Two Networks Based on Several Invariance Measures
 Version: 2.2.2
 Authors@R: c(
-    person("Claudia", "van Borkulo", role = c("aut")),
+  person("Claudia", "van Borkulo", role = c("aut")),
   person("Sacha", "Epskamp", role = c("aut")),
   person("Payton", "Jones", role = c("aut")),
-    person("Jonas", "Haslbeck", role = c("ctb")),
+  person("Jonas", "Haslbeck", role = c("ctb")),
   person("Alex", "Millner", role = c("ctb")), 
   person("Don", "van den Bergh", email = "d.vandenbergh@uva.nl", role = c("cre")), 
   person("Karoline", "Huth",  role = c("ctb")))
@@ -19,10 +19,10 @@ Imports:
     methods, 
     reshape2, 
     qgraph, 
-    networktools
+    networktools, 
+    IsingFit
 Suggests:
     bootnet,
-    IsingFit,
     IsingSampler,
     testthat (>= 3.0.0)
 Description: This permutation based hypothesis test, suited for several types of data 
