@@ -17,13 +17,13 @@ Imports:
     utils,
     Matrix,
     methods, 
-    reshape2
+    reshape2, 
+    qgraph, 
+    networktools
 Suggests:
     bootnet,
-    qgraph,
     IsingFit,
     IsingSampler,
-    networktools,
     testthat (>= 3.0.0)
 Description: This permutation based hypothesis test, suited for several types of data 
     supported by the estimateNetwork function of the bootnet package (Epskamp & Fried, 2018), 

@@ -52,6 +52,8 @@
 #' @importFrom reshape2 melt
 #' @importFrom stats na.omit
 #' @importFrom methods is
+#' @import qgraph
+#' @importFrom networktools bridge
 #' 
 #' 
 #' @export
@@ -294,8 +296,8 @@ NCT <- function(data1, data2,
       stop(paste0("'centrality' must be one of: ", paste0("'", 
                                                           validCentrality, "'", collapse = ", ")))
     }
-    cen1 <- centrality_auto(nw1)$node.centrality
-    cen2 <- centrality_auto(nw2)$node.centrality
+    cen1 <- qgraph::centrality_auto(nw1)$node.centrality
+    cen2 <- qgraph::centrality_auto(nw2)$node.centrality
     names(cen1) <- names(cen2) <- c("betweenness","closeness","strength","expectedInfluence")
     if(TRUE %in% (bridgecen %in% centrality)){
       b1 <- networktools::bridge(nw1, communities=communities, useCommunities=useCommunities)
@@ -420,8 +422,8 @@ NCT <- function(data1, data2,
     
     
     if(test.centrality==TRUE){
-      cen1permtemp <- centrality_auto(r1perm)$node.centrality
-      cen2permtemp <- centrality_auto(r2perm)$node.centrality
+      cen1permtemp <- qgraph::centrality_auto(r1perm)$node.centrality
+      cen2permtemp <- qgraph::centrality_auto(r2perm)$node.centrality
       names(cen1permtemp) <- names(cen2permtemp) <- c("betweenness","closeness","strength","expectedInfluence")
       if(TRUE %in% (bridgecen %in% centrality)){
         b1permtemp <- networktools::bridge(r1perm, communities=communities, useCommunities=useCommunities)

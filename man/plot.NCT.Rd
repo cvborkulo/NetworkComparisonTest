@@ -12,7 +12,7 @@
 \arguments{
 \item{x}{output of NCT}
 
-\item{...}{additional arguments}
+\item{...}{for now ignored}
 
 \item{what}{defines what has to be plotted: results pertaining to test on invariance of global strength ("strength"), network structure ("network"), edge strength ("edge"), or specific centrality measure ("centrality")}
 }

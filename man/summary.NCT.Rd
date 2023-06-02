@@ -9,7 +9,7 @@
 \arguments{
 \item{object}{output of NCT}
 
-\item{...}{additional arguments}
+\item{...}{for now ignored}
 }
 \description{
 Summary method for NCT
