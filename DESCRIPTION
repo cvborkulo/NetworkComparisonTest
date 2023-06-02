@@ -23,7 +23,6 @@ Suggests:
     qgraph,
     IsingFit,
     IsingSampler,
-    reshape2,
     networktools,
     testthat (>= 3.0.0)
 Description: This permutation based hypothesis test, suited for several types of data 
