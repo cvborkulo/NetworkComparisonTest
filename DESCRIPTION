@@ -35,6 +35,7 @@ Description: This permutation based hypothesis test, suited for several types of
     in press; the final article will be available, upon publication, via its DOI: 
     10.1037/met0000476).
 License: GPL-2
+Encoding: UTF-8
 RoxygenNote: 7.2.3
 Roxygen: list(markdown = TRUE)
 Config/testthat/edition: 3

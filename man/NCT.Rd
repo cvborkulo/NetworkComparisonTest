@@ -2,6 +2,7 @@
 % Please edit documentation in R/NCT.R
 \name{NCT}
 \alias{NCT}
+\alias{NetworkComparisonTest}
 \title{NetworkComparisonTest: Statistical Comparison of Two Networks Based on Several Invariance Measures}
 \usage{
 NCT(
