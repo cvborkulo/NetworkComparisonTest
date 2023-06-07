@@ -57,6 +57,7 @@
 #' @import IsingFit
 #' @importFrom networktools bridge
 #' 
+#' @example inst/examples/ex-NCT.R
 #' 
 #' @export
 #'
