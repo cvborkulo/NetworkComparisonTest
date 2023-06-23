@@ -3,14 +3,14 @@ Type: Package
 Title: Statistical Comparison of Two Networks Based on Several Invariance Measures
 Version: 2.2.2
 Authors@R: c(
-    person("Claudia", "van Borkulo", email = "cvborkulo@gmail.com",role = c("aut")),
-  person("Sacha", "Epskamp", role = c("aut")),
-  person("Payton", "Jones", role = c("aut")),
-    person("Jonas", "Haslbeck", role = c("ctb")),
-  person("Alex", "Millner", role = c("ctb")), 
-  person("Don", "van den Bergh", role = c("cre")), 
-  person("Karoline", "Huth", role = c("cre")))
-Maintainer: Claudia van Borkulo <cvborkulo@gmail.com> 
+  person("Claudia", "van Borkulo", email = "cvborkulo@gmail.com",role = c("aut")),
+  person("Sacha", "Epskamp",     role = c("aut")),
+  person("Payton", "Jones",      role = c("aut")),
+  person("Jonas", "Haslbeck",    role = c("ctb")),
+  person("Alex", "Millner",      role = c("ctb")),
+  person("Karoline", "Huth",     role = c("ctb")),
+  person("Don", "van den Bergh", role = c("cre"), email = "d.vandenbergh@uva.nl"))
+Maintainer: Don van den Bergh <d.vandenbergh@uva.nl>
 Imports:
     bootnet,
     qgraph,
