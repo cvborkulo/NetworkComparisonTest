@@ -1,3 +1,67 @@
+#' NetworkComparisonTest: Statistical Comparison of Two Networks Based on Several Invariance Measures
+#'
+#' @description This permutation based hypothesis test, suited for several types of data supported by the estimateNetwork function of the bootnet package (Epskamp & Fried, 2018), assesses the difference between two networks based on several invariance measures (network structure invariance, global strength invariance, edge invariance, several centrality measures, etc.). Network structures are estimated with l1-regularization. The Network Comparison Test is suited for comparison of independent (e.g., two different groups) and dependent samples (e.g., one group that is measured twice).
+#'
+#' @name NCT
+#' @aliases NCT NetworkComparisonTest
+#' 
+#' @param data1 One of two datasets. The dimension of the matrix is nobs x nvars; each row is a vector of observations of the variables. Must be cross-sectional data. Can also be the result of \code{estimateNetwork} from the bootnet package.
+#' @param data2 The other of two datasets. The dimension of the matrix is nobs x nvars; each row is a vector of observations of the variables. Must be cross-sectional data.  Can also be the result of \code{estimateNetwork} from the bootnet package.
+#' @param gamma A single value between 0 and 1. When not entered, gamma is set to 0.25 for binary data and 0.50 for gaussian data. Networks are estimated with this value for hyperparameter gamma in the extended BIC.
+#' @param it The number of iterations (permutations).
+#' @param binary.data Logical. Can be TRUE or FALSE to indicate whether the data is binary or not. If binary.data is FALSE, the data is regarded gaussian. This argument is ignored when using estimateNetwork() output as input for NCT.
+#' @param paired Logical. Can be TRUE of FALSE to indicate whether the samples are dependent or not. If paired is TRUE, relabeling is performed within each pair of observations. If paired is FALSE, relabeling is not restricted to pairs of observations. Note that, currently, dependent data is assumed to entail one group measured twice.
+#' @param weighted Logical. Can be TRUE of FALSE to indicate whether the networks to be compared should be weighted of not. If not, the estimated networks are dichotomized. Defaults to TRUE.
+#' @param AND Logical. Can be TRUE of FALSE to indicate whether the AND-rule or the OR-rule should be used to define the edges in the network. Defaults to TRUE. Only necessary for binary data.
+#' @param abs Logical. Should global strength consider the absolute value of edge weights, or the raw value (i.e., global expected influence)?
+#' @param test.edges Logical. Can be TRUE of FALSE to indicate whether or not differences in individual edges should be tested.
+#' @param edges Character or list. When 'all', differences between all individual edges are tested. When provided a list with one or more pairs of indices referring to variables, the provided edges are tested.
+#' @param progressbar Logical. Should the pbar be plotted in order to see the progress of the estimation procedure? Defaults to TRUE.
+#' @param make.positive.definite If \code{make.positive.definite = TRUE}, the covariance matrices used for the glasso are projected to the nearest positive definite matrices, if they are not yet positive definite. This is useful for small n, for which it is very likely that at least one of the bootstrap comparisons involves a covariance matrix that is not positive definite.
+#' @param p.adjust.methods Character. Can be one of "holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr", or "none". To control (or not) for testing of multiple edges. Defaults to "none".
+#' @param test.centrality Logical. Should centrality metrics be compared across networks?
+#' @param centrality Type of centrality metrics to test. Can be any of c("all", "closeness", "betweenness", "strength", "expectedInfluence", "bridgeStrength", "bridgeCloseness", "bridgeBetweenness", "bridgeExpectedInfluence")
+#' @param nodes Specific nodes for centrality tests. Can be character names or index numbers. Only used if test.centrality=TRUE
+#' @param communities Passed to bridge() if computing bridge centrality
+#' @param useCommunities Passed to bridge() if computing bridge centrality
+#' @param estimator A function that takes data as input and returns a network structure. This can be used for custom estimation algorithms. Note, supplying this function will overwrite the arguments \code{binary.data}, \code{AND}, \code{gamma} and \code{make.positive.definite}.
+#' @param estimatorArgs Arguments to the \code{estimator} function.
+#' @param verbose Logical: Should some warnings and notes be printed?
+#'
+#' @return NCT returns a 'NCT' object that contains the following items:
+#' 
+#' \itemize{
+#' \item \code{glstrinv.real } The difference in global strength between the networks of the observed data sets.
+#' \item \code{glstrinv.perm } The difference in global strength between the networks of the permutated data sets.
+#' \item \code{glstrinv.sep} The global strength values of the individual networks
+#' \item \code{glstrinv.pval} The p value resulting from the permutation test concerning difference in global strength.
+#' \item \code{nwinv.real} The value of the maximum difference in edge weights of the observed networks.
+#' \item \code{nwinv.perm} The values of the maximum difference in edge weights of the permuted networks.
+#' \item \code{nwinv.pval} The p value resulting from the permutation test concerning the maximum difference in edge weights.
+#' \item \code{einv.pvals} p-values (corrected for multiple testing or not according to 'p.adjust.methods') per edge from the permutation test concerning differences in edges weights. Only returned if test.edges = TRUE.
+#' \item \code{einv.real} The value of the difference in edge weight of the observed networks (multiple values if more edges are called to test). Only if test.edges = TRUE.
+#' \item \code{einv.perm} The values of the difference in edge weight of the permuted networks. Only if test.edges = TRUE.
+#' \item \code{diffcen.real} The values of the difference in centralities of the observed networks. Only if test.centrality = TRUE.
+#' \item \code{diffcen.perm} The values of the difference in centralities of the permuted networks. Only if test.centrality = TRUE.
+#' \item \code{diffcen.pval} p-values(corrected for multiple testing or not according to 'p.adjust.methods') per node from the permutation test concerning differences in centralities. Only if test.centrality = TRUE.
+#' }
+#' 
+#' @importFrom graphics hist points
+#' @importFrom stats cor p.adjust
+#' @importFrom utils setTxtProgressBar txtProgressBar
+#' @importFrom Matrix nearPD
+#' @importFrom reshape2 melt
+#' @importFrom stats na.omit
+#' @importFrom methods is
+#' @import qgraph
+#' @import IsingFit
+#' @importFrom networktools bridge
+#' 
+#' @example inst/examples/ex-NCT.R
+#' 
+#' @export
+#'
+
 NCT <- function(data1, data2, 
                 gamma, it = 100, binary.data=FALSE, 
                 paired=FALSE, weighted=TRUE, AND=TRUE, abs=TRUE,
@@ -235,8 +299,8 @@ NCT <- function(data1, data2,
       stop(paste0("'centrality' must be one of: ", paste0("'", 
                                                           validCentrality, "'", collapse = ", ")))
     }
-    cen1 <- centrality_auto(nw1)$node.centrality
-    cen2 <- centrality_auto(nw2)$node.centrality
+    cen1 <- qgraph::centrality_auto(nw1)$node.centrality
+    cen2 <- qgraph::centrality_auto(nw2)$node.centrality
     names(cen1) <- names(cen2) <- c("betweenness","closeness","strength","expectedInfluence")
     if(TRUE %in% (bridgecen %in% centrality)){
       b1 <- networktools::bridge(nw1, communities=communities, useCommunities=useCommunities)
@@ -361,8 +425,8 @@ NCT <- function(data1, data2,
     
     
     if(test.centrality==TRUE){
-      cen1permtemp <- centrality_auto(r1perm)$node.centrality
-      cen2permtemp <- centrality_auto(r2perm)$node.centrality
+      cen1permtemp <- qgraph::centrality_auto(r1perm)$node.centrality
+      cen2permtemp <- qgraph::centrality_auto(r2perm)$node.centrality
       names(cen1permtemp) <- names(cen2permtemp) <- c("betweenness","closeness","strength","expectedInfluence")
       if(TRUE %in% (bridgecen %in% centrality)){
         b1permtemp <- networktools::bridge(r1perm, communities=communities, useCommunities=useCommunities)

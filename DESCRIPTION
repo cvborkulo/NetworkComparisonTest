@@ -3,7 +3,7 @@ Type: Package
 Title: Statistical Comparison of Two Networks Based on Several Invariance Measures
 Version: 2.2.2
 Authors@R: c(
-  person("Claudia", "van Borkulo", email = "cvborkulo@gmail.com",role = c("aut")),
+  person("Claudia", "van Borkulo", role = c("aut")),
   person("Sacha", "Epskamp",     role = c("aut")),
   person("Payton", "Jones",      role = c("aut")),
   person("Jonas", "Haslbeck",    role = c("ctb")),
@@ -12,18 +12,19 @@ Authors@R: c(
   person("Don", "van den Bergh", role = c("cre"), email = "d.vandenbergh@uva.nl"))
 Maintainer: Don van den Bergh <d.vandenbergh@uva.nl>
 Imports:
-    bootnet,
-    qgraph,
-    IsingFit,
-    IsingSampler,
-    reshape2,
     stats,
     graphics,
     utils,
     Matrix,
-    methods
+    methods, 
+    reshape2, 
+    qgraph, 
+    networktools, 
+    IsingFit
 Suggests:
-    networktools
+    bootnet,
+    IsingSampler,
+    testthat (>= 3.0.0)
 Description: This permutation based hypothesis test, suited for several types of data 
     supported by the estimateNetwork function of the bootnet package (Epskamp & Fried, 2018), 
     assesses the difference between two networks based on several invariance measures (network 
@@ -34,4 +35,7 @@ Description: This permutation based hypothesis test, suited for several types of
     in press; the final article will be available, upon publication, via its DOI: 
     10.1037/met0000476).
 License: GPL-2
-RoxygenNote: 6.1.1
+Encoding: UTF-8
+RoxygenNote: 7.2.3
+Roxygen: list(markdown = TRUE)
+Config/testthat/edition: 3
