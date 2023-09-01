@@ -68,6 +68,10 @@ summary(NCT_b)
 # Also, here you can see how to specify that you want to take the sign of node strength 
 # into account (by default, the absolute value is taken and, therefore, the sign is 
 # ignored).
+# we don't run these two examples by default as they take too long for the R CMD check
+# but they are still interesting.
+
+\dontrun{
 
 ## abs = FALSE
 set.seed(123)
@@ -83,3 +87,4 @@ NCT_d = NCT(est_1, est_2, paired = TRUE, abs = FALSE, test.edges = TRUE,
             edges = list(c(1,2),c(3,6)), test.centrality = TRUE, 
             centrality = c("expectedInfluence"), nodes = "all", it=10)
 summary(NCT_d)
+}

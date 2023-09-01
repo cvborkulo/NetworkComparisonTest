@@ -1,8 +1,8 @@
 citHeader("To cite NCT in publications use:")
 
-citEntry(entry = "Article",
+bibentry(bibtype = "Article",
   title        = "Comparing network structures on three aspects: A permutation test",
-  author       = personList(as.person("Claudia D. van Borkulo"),
+  author       = c(as.person("Claudia D. van Borkulo"),
                    as.person("Riet van Bork"),
                    as.person("Lynn Boschloo"),
                    as.person("Jolanda J. Kossakowski"),
@@ -12,7 +12,7 @@ citEntry(entry = "Article",
                    as.person("Lourens J. Waldorp")),
   year         = "2021",
   journal      = "Psychological Methods",
-  doi          = "DOI: 10.1037/met0000476",
+  doi          = "10.1037/met0000476",
   textVersion  =
   paste("Claudia D. van Borkulo, Riet van Bork, Lynn Boschloo, Jolanda J. Kossakowski, Pia Tio, Robert A. Schoevers, Denny Borsboom, Lourens J. Waldorp (2021).",
         "Comparing network structures on three aspects: A permutation test.",
