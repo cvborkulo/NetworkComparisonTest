@@ -31,9 +31,8 @@ Description: This permutation based hypothesis test, suited for several types of
     structure invariance, global strength invariance, edge invariance, several centrality 
     measures, etc.). Network structures are estimated with l1-regularization. The Network 
     Comparison Test is suited for comparison of independent (e.g., two different groups) and 
-    dependent samples (e.g., one group that is measured twice). See van Borkulo et al. (2021, 
-    in press; the final article will be available, upon publication, via its DOI: 
-    10.1037/met0000476).
+    dependent samples (e.g., one group that is measured twice). See van Borkulo et al. (2021),
+    available from <doi:10.1037/met0000476>.
 License: GPL-2
 Encoding: UTF-8
 RoxygenNote: 7.2.3
